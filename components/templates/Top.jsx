@@ -34,6 +34,7 @@ const Top = () => {
             w="300px"
             objectFit="cover"
             src="/the_creators_logo.png"
+            alt=""
           />
           <Heading fontSize="28px" mb="8px" w="400px">
             あなたの作りたいを現実に
@@ -49,7 +50,7 @@ const Top = () => {
             はじめる
           </Button>
         </Flex>
-        <Image h="320px" src="/about-image.svg" />
+        <Image h="320px" src="/about-image.svg" alt="" />
       </HStack>
       <Flex w="100%" h="100%" justifyContent="center">
         <Flex w="800px" h="100%" direction="column">
@@ -87,7 +88,13 @@ const Top = () => {
                 </Box>
                 <Box>
                   <Box width="312px" height="362px" p="16px">
-                    <ProductCard w="250px" />
+                    <Image
+                      src="/top01.png"
+                      w="100%"
+                      h="100%"
+                      objectFit="cover"
+                      alt=""
+                    />
                   </Box>
                 </Box>
               </HStack>
@@ -96,7 +103,13 @@ const Top = () => {
               <HStack spacing={4}>
                 <Box>
                   <Box width="312px" height="362px" p="16px">
-                    <ProductCard w="250px" />
+                    <Image
+                      src="/top02.png"
+                      w="100%"
+                      h="100%"
+                      objectFit="cover"
+                      alt=""
+                    />
                   </Box>
                 </Box>
                 <Box>
@@ -125,6 +138,41 @@ const Top = () => {
                       Creators」を使うことで一緒にものづくりをしたいクリエイターを探して繋がることができます。
                     </Text>
                   </VStack>
+                </Box>
+              </HStack>
+            </Flex>
+            <Flex justify="center" width="100%" height="100%" align="center">
+              <HStack spacing={4}>
+                <Box>
+                  <VStack spacing={4}>
+                    <Text fontSize="24px" color="teal">
+                      「創りたいものがあるけど、自分ひとりじゃ難しい。」
+                    </Text>
+                    <UnorderedList fontSize="16px">
+                      <ListItem>
+                        「この企画を作るにはデザイナーが必要・エンジニアが必要」
+                      </ListItem>
+                      <ListItem>
+                        「自分の専門ではない人と繋がって一緒にものづくりがしたい」
+                      </ListItem>
+                      <ListItem>
+                        「いいアイデアが思いついたのに形にする方法がわからない」
+                      </ListItem>
+                      <ListItem>
+                        「ものづくりの中で自分の領域でない部分を、専門にしている人に手伝ってほしい」
+                      </ListItem>
+                    </UnorderedList>
+                    <Text fontSize="14px">
+                      人によって創りたいものの規模や目標は様々です。「創りたいものはあっても自分ひとりでは創れない。でも一緒に創ってくれる人や、自分の領域以外の分野で知り合いがいない。」という人が多くいます。
+                      そんなときに、この「The
+                      Creators」を使うことで一緒にアイデアを形にする仲間を見つけることができます。
+                    </Text>
+                  </VStack>
+                </Box>
+                <Box>
+                  <Box width="312px" height="362px" p="16px">
+                    <ProductCard w="250px" />
+                  </Box>
                 </Box>
               </HStack>
             </Flex>

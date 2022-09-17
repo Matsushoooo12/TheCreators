@@ -9,21 +9,34 @@ import {
 } from "@chakra-ui/react";
 import { useRouter } from "next/router";
 import React from "react";
-import QueryContainer from "../../components/templates/QueryContainer";
+import QueryContainer from "../../../components/templates/QueryContainer";
 import dayjs from "dayjs";
 import { getDownloadURL, ref, uploadBytesResumable } from "firebase/storage";
-import { db, storage } from "../../firebase/config";
-import { addDoc, collection, doc } from "firebase/firestore";
-import { AuthContext } from "../_app";
-import { useDocumentData } from "react-firebase-hooks/firestore";
+import { db, storage } from "../../../firebase/config";
+import {
+  addDoc,
+  arrayUnion,
+  collection,
+  doc,
+  updateDoc,
+} from "firebase/firestore";
+import { AuthContext } from "../../_app";
+import { useCollection, useDocumentData } from "react-firebase-hooks/firestore";
 
 const CreateProject = () => {
   const router = useRouter();
   const { currentUser } = React.useContext(AuthContext);
 
-  const [user] = useDocumentData(doc(db, "users", currentUser?.uid));
+  const [usersSnapshot] = useCollection(collection(db, "users"));
+  const users = usersSnapshot?.docs.map((doc) => ({
+    id: doc.id,
+    ...doc.data(),
+  }));
+  const user = users?.find((user) => user.id === currentUser?.uid);
 
   const [queryNumber, setQueryNumber] = React.useState("1");
+
+  const [id, setId] = React.useState("");
   // 1
   const [title, setTitle] = React.useState("");
   const [summary, setSummary] = React.useState("");
@@ -37,7 +50,9 @@ const CreateProject = () => {
   //   3
   const [role1, setRole1] = React.useState("");
   const [role2, setRole2] = React.useState("");
-  const [tags, setTags] = React.useState([]);
+  const [tag1, setTag1] = React.useState("");
+  const [tag2, setTag2] = React.useState("");
+  const [tag3, setTag3] = React.useState("");
   //   4
   const [whatImage1, setWhatImage1] = React.useState("");
   const [whatImage2, setWhatImage2] = React.useState("");
@@ -258,121 +273,645 @@ const CreateProject = () => {
     }
   };
 
-  const handleSubmit = async (e) => {
+  console.log("id", id);
+
+  const handleSubmit1 = async (e) => {
     e.preventDefault();
-    await addDoc(collection(db, "projects"), {
-      title: title,
-      summary: summary,
-      thumbnail: "",
-      purpose: purpose,
-      status: status,
-      deadline: deadline,
-      roles: [role1, role2],
-      tags: [],
-      members: [
-        {
-          displayName: user?.displayName,
-          photoURL: user?.photoURL,
-          uid: currentUser?.uid,
-          text: user?.text,
-          organization: user?.organization,
-          tags: user?.tags?.map((tag) => {
-            return tag.text;
-          }),
-          role: user?.roles[0],
-        },
-      ],
-      what: {
-        images: [],
-        text: whatText,
-      },
-      why: {
-        images: [],
-        text: whyText,
-      },
-      how: {
-        images: [],
-        text: howText,
-      },
-      hope: {
-        images: [],
-        text: hopeText,
-      },
-      goal: {
-        images: [],
-        text: goalText,
-      },
-      user: {
-        displayName: currentUser?.displayName,
-        photoURL: currentUser?.photoURL,
-        uid: currentUser?.uid,
-      },
-    }).then(() => {
-      router.push("/");
-    });
     const uploadProjectThumbnail = uploadBytesResumable(
       ref(storage, `projects/${thumbnail.name}`),
       thumbnail
     );
-    // uploadProjectThumbnail.on(
-    //   "state_changed",
-    //   () => {},
-    //   (err) => {
-    //     alert(err.message);
-    //   },
-    //   async () => {
-    //     await getDownloadURL(ref(storage, `projects/${thumbnail.name}`)).then(
-    //       async (url) => {
-    //         try {
-    //           setThumbnail(url);
-    //         } catch (e) {
-    //           console.log(e);
-    //         }
-    //       }
-    //     );
-    //   }
-    // );
+    await uploadProjectThumbnail.on(
+      "state_changed",
+      () => {},
+      (err) => {
+        alert(err.message);
+      },
+      async () => {
+        await getDownloadURL(ref(storage, `projects/${thumbnail.name}`)).then(
+          async (url) => {
+            try {
+              await addDoc(collection(db, "projects"), {
+                title: title,
+                summary: summary,
+                thumbnail: url,
+                purpose: purpose,
+                user: {
+                  displayName: currentUser?.displayName,
+                  photoURL: currentUser?.photoURL,
+                  uid: currentUser?.uid,
+                },
+                members: [
+                  {
+                    displayName: user?.displayName,
+                    photoURL: user?.photoURL,
+                    uid: currentUser?.uid,
+                    text: user?.text,
+                    organization: user?.organization,
+                    tags: user?.tags?.map((tag) => {
+                      return tag.text;
+                    }),
+                    role: user?.roles[0],
+                  },
+                ],
+              }).then(async (res) => {
+                await setId(res.id);
+                await setQueryNumber("2");
+              });
+            } catch (e) {
+              console.log(e);
+            }
+          }
+        );
+      }
+    );
+  };
+
+  const handleSubmit2 = async (e) => {
+    e.preventDefault();
+    const projectRef = await doc(db, "projects", id);
+    try {
+      await updateDoc(projectRef, {
+        status: status,
+        deadline: deadline,
+      }).then(async () => {
+        await setQueryNumber("3");
+      });
+    } catch (e) {
+      console.log(e);
+    }
+  };
+
+  const handleSubmit3 = async (e) => {
+    e.preventDefault();
+    const projectRef = await doc(db, "projects", id);
+    try {
+      await updateDoc(projectRef, {
+        roles: [role1, role2],
+        tags: [
+          {
+            image: "",
+            text: tag1,
+          },
+          {
+            image: "",
+            text: tag2,
+          },
+          {
+            image: "",
+            text: tag3,
+          },
+        ],
+      }).then(async () => {
+        await setQueryNumber("4");
+      });
+    } catch (e) {
+      console.log(e);
+    }
+  };
+
+  const handleSubmit4 = async (e) => {
+    e.preventDefault();
+    const projectRef = await doc(db, "projects", id);
     const uploadProjectWhatImage1 = uploadBytesResumable(
       ref(storage, `projects/${whatImage1.name}`),
       whatImage1
     );
-    const uploadProjectWhatImage2 = uploadBytesResumable(
-      ref(storage, `projects/${whatImage2.name}`),
-      whatImage2
+    await uploadProjectWhatImage1.on(
+      "state_changed",
+      () => {},
+      (err) => {
+        alert(err.message);
+      },
+      async () => {
+        await getDownloadURL(ref(storage, `projects/${whatImage1.name}`)).then(
+          async (url) => {
+            try {
+              await updateDoc(projectRef, {
+                what: {
+                  images: [url],
+                  text: whatText,
+                },
+              }).then(async () => {
+                await setQueryNumber("5");
+              });
+            } catch (e) {
+              console.log(e);
+            }
+          }
+        );
+      }
     );
+  };
+
+  const handleSubmit5 = async (e) => {
+    e.preventDefault();
+    const projectRef = await doc(db, "projects", id);
     const uploadProjectWhyImage1 = uploadBytesResumable(
       ref(storage, `projects/${whyImage1.name}`),
       whyImage1
     );
-    const uploadProjectWhyImage2 = uploadBytesResumable(
-      ref(storage, `projects/${whyImage2.name}`),
-      whyImage2
+    await uploadProjectWhyImage1.on(
+      "state_changed",
+      () => {},
+      (err) => {
+        alert(err.message);
+      },
+      async () => {
+        await getDownloadURL(ref(storage, `projects/${whyImage1.name}`)).then(
+          async (url) => {
+            try {
+              await updateDoc(projectRef, {
+                why: {
+                  images: [url],
+                  text: whyText,
+                },
+              }).then(async () => {
+                await setQueryNumber("6");
+              });
+            } catch (e) {
+              console.log(e);
+            }
+          }
+        );
+      }
     );
+  };
+
+  const handleSubmit6 = async (e) => {
+    e.preventDefault();
+    const projectRef = await doc(db, "projects", id);
     const uploadProjectHowImage1 = uploadBytesResumable(
       ref(storage, `projects/${howImage1.name}`),
       howImage1
     );
-    const uploadProjectHowImage2 = uploadBytesResumable(
-      ref(storage, `projects/${howImage2.name}`),
-      howImage2
+    await uploadProjectHowImage1.on(
+      "state_changed",
+      () => {},
+      (err) => {
+        alert(err.message);
+      },
+      async () => {
+        await getDownloadURL(ref(storage, `projects/${howImage1.name}`)).then(
+          async (url) => {
+            try {
+              await updateDoc(projectRef, {
+                how: {
+                  images: [url],
+                  text: howText,
+                },
+              }).then(async () => {
+                await setQueryNumber("7");
+              });
+            } catch (e) {
+              console.log(e);
+            }
+          }
+        );
+      }
     );
+  };
+
+  const handleSubmit7 = async (e) => {
+    e.preventDefault();
+    const projectRef = await doc(db, "projects", id);
     const uploadProjectHopeImage1 = uploadBytesResumable(
       ref(storage, `projects/${hopeImage1.name}`),
       hopeImage1
     );
-    const uploadProjectHopeImage2 = uploadBytesResumable(
-      ref(storage, `projects/${hopeImage2.name}`),
-      hopeImage2
+    await uploadProjectHopeImage1.on(
+      "state_changed",
+      () => {},
+      (err) => {
+        alert(err.message);
+      },
+      async () => {
+        await getDownloadURL(ref(storage, `projects/${hopeImage1.name}`)).then(
+          async (url) => {
+            try {
+              await updateDoc(projectRef, {
+                hope: {
+                  images: [url],
+                  text: hopeText,
+                },
+              }).then(async () => {
+                await setQueryNumber("8");
+              });
+            } catch (e) {
+              console.log(e);
+            }
+          }
+        );
+      }
     );
+  };
+
+  const handleSubmit8 = async (e) => {
+    e.preventDefault();
+    const projectRef = await doc(db, "projects", id);
     const uploadProjectGoalImage1 = uploadBytesResumable(
       ref(storage, `projects/${goalImage1.name}`),
       goalImage1
     );
-    const uploadProjectGoalImage2 = uploadBytesResumable(
-      ref(storage, `projects/${goalImage2.name}`),
-      goalImage2
+    await uploadProjectGoalImage1.on(
+      "state_changed",
+      () => {},
+      (err) => {
+        alert(err.message);
+      },
+      async () => {
+        await getDownloadURL(ref(storage, `projects/${goalImage1.name}`)).then(
+          async (url) => {
+            try {
+              await updateDoc(projectRef, {
+                goal: {
+                  images: [url],
+                  text: goalText,
+                },
+              }).then(async () => {
+                router.push("/");
+              });
+            } catch (e) {
+              console.log(e);
+            }
+          }
+        );
+      }
     );
   };
+
+  // const handleSubmit = async (e) => {
+  //   e.preventDefault();
+  //   const uploadProjectThumbnail = uploadBytesResumable(
+  //     ref(storage, `projects/${thumbnail.name}`),
+  //     thumbnail
+  //   );
+  //   await uploadProjectThumbnail.on(
+  //     "state_changed",
+  //     () => {},
+  //     (err) => {
+  //       alert(err.message);
+  //     },
+  //     async () => {
+  //       await getDownloadURL(ref(storage, `projects/${thumbnail.name}`)).then(
+  //         async (url) => {
+  //           try {
+  //             await addDoc(collection(db, "projects"), {
+  // title: title,
+  // summary: summary,
+  // thumbnail: url,
+  // purpose: purpose,
+  // status: status,
+  // deadline: deadline,
+  // roles: [role1, role2],
+  // tags: [],
+  // members: [
+  //   {
+  //     displayName: user?.displayName,
+  //     photoURL: user?.photoURL,
+  //     uid: currentUser?.uid,
+  //     text: user?.text,
+  //     organization: user?.organization,
+  //     tags: user?.tags?.map((tag) => {
+  //       return tag.text;
+  //     }),
+  //     role: user?.roles[0],
+  //   },
+  // ],
+  // user: {
+  //   displayName: currentUser?.displayName,
+  //   photoURL: currentUser?.photoURL,
+  //   uid: currentUser?.uid,
+  // },
+  //         }).then((res) => {
+  //           setId(res.id);
+  //         });
+  //       } catch (e) {
+  //         console.log(e);
+  //       }
+  //     }
+  //   );
+  // }
+  // );
+  // const projectRef = await doc(db, "projects", id);
+  // const uploadProjectWhatImage1 = uploadBytesResumable(
+  //   ref(storage, `projects/${whatImage1.name}`),
+  //   whatImage1
+  // );
+  // await uploadProjectWhatImage1.on(
+  //   "state_changed",
+  //   () => {},
+  //   (err) => {
+  //     alert(err.message);
+  //   },
+  //   async () => {
+  //     await getDownloadURL(ref(storage, `projects/${whatImage1.name}`)).then(
+  //       async (url) => {
+  //         try {
+  //           await updateDoc(projectRef, {
+  //             what: {
+  //               images: arrayUnion(url),
+  //               text: whatText,
+  //             },
+  //           });
+  //         } catch (e) {
+  //           console.log(e);
+  //         }
+  //       }
+  //     );
+  //   }
+  // );
+  // const uploadProjectWhatImage2 = uploadBytesResumable(
+  //   ref(storage, `projects/${whatImage2.name}`),
+  //   whatImage2
+  // );
+  // await uploadProjectWhatImage2.on(
+  //   "state_changed",
+  //   () => {},
+  //   (err) => {
+  //     alert(err.message);
+  //   },
+  //   async () => {
+  //     await getDownloadURL(ref(storage, `projects/${whatImage2.name}`)).then(
+  //       async (url) => {
+  //         try {
+  //           await updateDoc(projectRef, {
+  //             what: {
+  //               images: arrayUnion(url),
+  //             },
+  //           });
+  //         } catch (e) {
+  //           console.log(e);
+  //         }
+  //       }
+  //     );
+  //   }
+  // );
+  // const uploadProjectWhyImage1 = uploadBytesResumable(
+  //   ref(storage, `projects/${whyImage1.name}`),
+  //   whyImage1
+  // );
+  // await uploadProjectWhyImage1.on(
+  //   "state_changed",
+  //   () => {},
+  //   (err) => {
+  //     alert(err.message);
+  //   },
+  //   async () => {
+  //     await getDownloadURL(ref(storage, `projects/${whyImage1.name}`)).then(
+  //       async (url) => {
+  //         try {
+  //           await updateDoc(projectRef, {
+  //             why: {
+  //               images: arrayUnion(url),
+  //               text: whyText,
+  //             },
+  //           });
+  //         } catch (e) {
+  //           console.log(e);
+  //         }
+  //       }
+  //     );
+  //   }
+  // );
+  // const uploadProjectWhyImage2 = uploadBytesResumable(
+  //   ref(storage, `projects/${whyImage2.name}`),
+  //   whyImage2
+  // );
+  // await uploadProjectWhyImage2.on(
+  //   "state_changed",
+  //   () => {},
+  //   (err) => {
+  //     alert(err.message);
+  //   },
+  //   async () => {
+  //     await getDownloadURL(ref(storage, `projects/${whyImage2.name}`)).then(
+  //       async (url) => {
+  //         try {
+  //           await updateDoc(projectRef, {
+  //             why: {
+  //               images: arrayUnion(url),
+  //             },
+  //           });
+  //         } catch (e) {
+  //           console.log(e);
+  //         }
+  //       }
+  //     );
+  //   }
+  // );
+  // const uploadProjectHowImage1 = uploadBytesResumable(
+  //   ref(storage, `projects/${howImage1.name}`),
+  //   howImage1
+  // );
+  // await uploadProjectHowImage1.on(
+  //   "state_changed",
+  //   () => {},
+  //   (err) => {
+  //     alert(err.message);
+  //   },
+  //   async () => {
+  //     await getDownloadURL(ref(storage, `projects/${howImage1.name}`)).then(
+  //       async (url) => {
+  //         try {
+  //           await updateDoc(projectRef, {
+  //             how: {
+  //               images: arrayUnion(url),
+  //               text: howText,
+  //             },
+  //           });
+  //         } catch (e) {
+  //           console.log(e);
+  //         }
+  //       }
+  //     );
+  //   }
+  // );
+  // const uploadProjectHowImage2 = uploadBytesResumable(
+  //   ref(storage, `projects/${howImage2.name}`),
+  //   howImage2
+  // );
+  // await uploadProjectHowImage2.on(
+  //   "state_changed",
+  //   () => {},
+  //   (err) => {
+  //     alert(err.message);
+  //   },
+  //   async () => {
+  //     await getDownloadURL(ref(storage, `projects/${howImage2.name}`)).then(
+  //       async (url) => {
+  //         try {
+  //           await updateDoc(projectRef, {
+  //             how: {
+  //               images: arrayUnion(url),
+  //             },
+  //           });
+  //         } catch (e) {
+  //           console.log(e);
+  //         }
+  //       }
+  //     );
+  //   }
+  // );
+  // const uploadProjectHopeImage1 = uploadBytesResumable(
+  //   ref(storage, `projects/${hopeImage1.name}`),
+  //   hopeImage1
+  // );
+  // await uploadProjectHopeImage1.on(
+  //   "state_changed",
+  //   () => {},
+  //   (err) => {
+  //     alert(err.message);
+  //   },
+  //   async () => {
+  //     await getDownloadURL(ref(storage, `projects/${hopeImage1.name}`)).then(
+  //       async (url) => {
+  //         try {
+  //           await updateDoc(projectRef, {
+  //             hope: {
+  //               images: arrayUnion(url),
+  //               text: hopeText,
+  //             },
+  //           });
+  //         } catch (e) {
+  //           console.log(e);
+  //         }
+  //       }
+  //     );
+  //   }
+  // );
+  // const uploadProjectHopeImage2 = uploadBytesResumable(
+  //   ref(storage, `projects/${hopeImage2.name}`),
+  //   hopeImage2
+  // );
+  // await uploadProjectHopeImage2.on(
+  //   "state_changed",
+  //   () => {},
+  //   (err) => {
+  //     alert(err.message);
+  //   },
+  //   async () => {
+  //     await getDownloadURL(ref(storage, `projects/${hopeImage2.name}`)).then(
+  //       async (url) => {
+  //         try {
+  //           await updateDoc(projectRef, {
+  //             hope: {
+  //               images: arrayUnion(url),
+  //             },
+  //           });
+  //         } catch (e) {
+  //           console.log(e);
+  //         }
+  //       }
+  //     );
+  //   }
+  // );
+  // const uploadProjectGoalImage1 = uploadBytesResumable(
+  //   ref(storage, `projects/${goalImage1.name}`),
+  //   goalImage1
+  // );
+  // await uploadProjectGoalImage1.on(
+  //   "state_changed",
+  //   () => {},
+  //   (err) => {
+  //     alert(err.message);
+  //   },
+  //   async () => {
+  //     await getDownloadURL(ref(storage, `projects/${goalImage1.name}`)).then(
+  //       async (url) => {
+  //         try {
+  //           await updateDoc(projectRef, {
+  //             goal: {
+  //               images: arrayUnion(url),
+  //               text: goalText,
+  //             },
+  //           });
+  //         } catch (e) {
+  //           console.log(e);
+  //         }
+  //       }
+  //     );
+  //   }
+  // );
+  // const uploadProjectGoalImage2 = uploadBytesResumable(
+  //   ref(storage, `projects/${goalImage2.name}`),
+  //   goalImage2
+  // );
+  // await uploadProjectGoalImage2.on(
+  //   "state_changed",
+  //   () => {},
+  //   (err) => {
+  //     alert(err.message);
+  //   },
+  //   async () => {
+  //     await getDownloadURL(ref(storage, `projects/${goalImage2.name}`)).then(
+  //       async (url) => {
+  //         try {
+  //           await updateDoc(projectRef, {
+  //             why: {
+  //               images: arrayUnion(url),
+  //               text: whyText,
+  //             },
+  //           });
+  //         } catch (e) {
+  //           console.log(e);
+  //         }
+  //       }
+  //     );
+  //   }
+  // );
+
+  // await addDoc(collection(db, "projects"), {
+  //   title: title,
+  //   summary: summary,
+  //   thumbnail: thumbnail,
+  //   purpose: purpose,
+  //   status: status,
+  //   deadline: deadline,
+  //   roles: [role1, role2],
+  //   tags: [],
+  //   members: [
+  //     {
+  //       displayName: user?.displayName,
+  //       photoURL: user?.photoURL,
+  //       uid: currentUser?.uid,
+  //       text: user?.text,
+  //       organization: user?.organization,
+  //       tags: user?.tags?.map((tag) => {
+  //         return tag.text;
+  //       }),
+  //       role: user?.roles[0],
+  //     },
+  //   ],
+  //   what: {
+  //     images: [whatImage1, whatImage2],
+  //     text: whatText,
+  //   },
+  //   why: {
+  //     images: [whyImage1, whyImage2],
+  //     text: whyText,
+  //   },
+  //   how: {
+  //     images: [howImage1, howImage2],
+  //     text: howText,
+  //   },
+  //   hope: {
+  //     images: [hopeImage1, hopeImage2],
+  //     text: hopeText,
+  //   },
+  //   goal: {
+  //     images: [goalImage1, goalImage2],
+  //     text: goalText,
+  //   },
+  //   user: {
+  //     displayName: currentUser?.displayName,
+  //     photoURL: currentUser?.photoURL,
+  //     uid: currentUser?.uid,
+  //   },
+  // }).then(() => {
+  //   router.push("/");
+  // });
+  // };
 
   return (
     <>
@@ -455,7 +994,7 @@ const CreateProject = () => {
                 <option value="学習">学習</option>
               </Select>
             </Flex>
-            <Button my="16px" onClick={() => setQueryNumber("2")}>
+            <Button my="16px" onClick={handleSubmit1}>
               次へ
             </Button>
           </>
@@ -492,10 +1031,9 @@ const CreateProject = () => {
               type="date"
             />
           </Flex>
-          <Button my="16px" onClick={() => setQueryNumber("3")}>
+          <Button my="16px" onClick={handleSubmit2}>
             次へ
           </Button>
-          <Button onClick={() => setQueryNumber("1")}>戻る</Button>
         </QueryContainer>
       )}
       {queryNumber === "3" && (
@@ -540,8 +1078,28 @@ const CreateProject = () => {
             <Text fontWeight="bold" mb="8px">
               タグ（３つまで）
             </Text>
-            <Input type="text" placeholder="タグ追加" mb="16px" />
-            <Flex flexWrap="wrap" mb="16px">
+            <Input
+              type="text"
+              value={tag1}
+              onChange={(e) => setTag1(e.target.value)}
+              placeholder="タグ追加"
+              mb="16px"
+            />
+            <Input
+              value={tag2}
+              onChange={(e) => setTag2(e.target.value)}
+              type="text"
+              placeholder="タグ追加"
+              mb="16px"
+            />
+            <Input
+              value={tag3}
+              onChange={(e) => setTag3(e.target.value)}
+              type="text"
+              placeholder="タグ追加"
+              mb="16px"
+            />
+            {/* <Flex flexWrap="wrap" mb="16px">
               <Text
                 p="4px 16px"
                 borderRadius="full"
@@ -572,12 +1130,11 @@ const CreateProject = () => {
               >
                 Webアプリ開発
               </Text>
-            </Flex>
+            </Flex> */}
           </Flex>
-          <Button my="16px" onClick={() => setQueryNumber("4")}>
+          <Button my="16px" onClick={handleSubmit3}>
             次へ
           </Button>
-          <Button onClick={() => setQueryNumber("2")}>戻る</Button>
         </QueryContainer>
       )}
       {queryNumber === "4" && (
@@ -593,8 +1150,8 @@ const CreateProject = () => {
             <Flex>
               {whatImage1Preview ? (
                 <Image
-                  w="50%"
-                  h="120px"
+                  w="100%"
+                  h="200px"
                   alt=""
                   src={whatImage1Preview}
                   onClick={onClickWhatImage1Preview}
@@ -602,13 +1159,13 @@ const CreateProject = () => {
                 />
               ) : (
                 <Flex
-                  w="50%"
-                  h="120px"
+                  w="100%"
+                  h="200px"
                   bg="gray.100"
                   onClick={onClickWhatImage1Preview}
                 ></Flex>
               )}
-              {whatImage2Preview ? (
+              {/* {whatImage2Preview ? (
                 <Image
                   w="50%"
                   h="120px"
@@ -624,7 +1181,7 @@ const CreateProject = () => {
                   bg="gray.300"
                   onClick={onClickWhatImage2Preview}
                 ></Flex>
-              )}
+              )} */}
               <Input
                 style={{ display: "none" }}
                 name="image"
@@ -633,14 +1190,14 @@ const CreateProject = () => {
                 onChange={(e) => onChangeWhatImage1Handler(e)}
                 ref={whatImage1PreviewRef}
               />
-              <Input
+              {/* <Input
                 style={{ display: "none" }}
                 name="image"
                 id="image"
                 type="file"
                 onChange={(e) => onChangeWhatImage2Handler(e)}
                 ref={whatImage2PreviewRef}
-              />
+              /> */}
             </Flex>
           </Flex>
           <Flex direction="column" mb="16px">
@@ -655,10 +1212,9 @@ const CreateProject = () => {
               resize="none"
             />
           </Flex>
-          <Button my="16px" onClick={() => setQueryNumber("5")}>
+          <Button my="16px" onClick={handleSubmit4}>
             次へ
           </Button>
-          <Button onClick={() => setQueryNumber("3")}>戻る</Button>
         </QueryContainer>
       )}
       {queryNumber === "5" && (
@@ -670,8 +1226,8 @@ const CreateProject = () => {
             <Flex>
               {whyImage1Preview ? (
                 <Image
-                  w="50%"
-                  h="120px"
+                  w="100%"
+                  h="200px"
                   alt=""
                   src={whyImage1Preview}
                   onClick={onClickWhyImage1Preview}
@@ -679,13 +1235,13 @@ const CreateProject = () => {
                 />
               ) : (
                 <Flex
-                  w="50%"
-                  h="120px"
+                  w="100%"
+                  h="200px"
                   bg="gray.100"
                   onClick={onClickWhyImage1Preview}
                 ></Flex>
               )}
-              {whyImage2Preview ? (
+              {/* {whyImage2Preview ? (
                 <Image
                   w="50%"
                   h="120px"
@@ -701,7 +1257,7 @@ const CreateProject = () => {
                   bg="gray.300"
                   onClick={onClickWhyImage2Preview}
                 ></Flex>
-              )}
+              )} */}
               <Input
                 style={{ display: "none" }}
                 name="image"
@@ -710,14 +1266,14 @@ const CreateProject = () => {
                 onChange={(e) => onChangeWhyImage1Handler(e)}
                 ref={whyImage1PreviewRef}
               />
-              <Input
+              {/* <Input
                 style={{ display: "none" }}
                 name="image"
                 id="image"
                 type="file"
                 onChange={(e) => onChangeWhyImage2Handler(e)}
                 ref={whyImage2PreviewRef}
-              />
+              /> */}
             </Flex>
           </Flex>
           <Flex direction="column" mb="16px">
@@ -732,10 +1288,9 @@ const CreateProject = () => {
               resize="none"
             />
           </Flex>
-          <Button my="16px" onClick={() => setQueryNumber("6")}>
+          <Button my="16px" onClick={handleSubmit5}>
             次へ
           </Button>
-          <Button onClick={() => setQueryNumber("4")}>戻る</Button>
         </QueryContainer>
       )}
       {queryNumber === "6" && (
@@ -751,8 +1306,8 @@ const CreateProject = () => {
             <Flex>
               {howImage1Preview ? (
                 <Image
-                  w="50%"
-                  h="120px"
+                  w="100%"
+                  h="200px"
                   alt=""
                   src={howImage1Preview}
                   onClick={onClickHowImage1Preview}
@@ -760,13 +1315,13 @@ const CreateProject = () => {
                 />
               ) : (
                 <Flex
-                  w="50%"
-                  h="120px"
+                  w="100%"
+                  h="200px"
                   bg="gray.100"
                   onClick={onClickHowImage1Preview}
                 ></Flex>
               )}
-              {howImage2Preview ? (
+              {/* {howImage2Preview ? (
                 <Image
                   w="50%"
                   h="120px"
@@ -782,7 +1337,7 @@ const CreateProject = () => {
                   bg="gray.300"
                   onClick={onClickHowImage2Preview}
                 ></Flex>
-              )}
+              )} */}
               <Input
                 style={{ display: "none" }}
                 name="image"
@@ -791,14 +1346,14 @@ const CreateProject = () => {
                 onChange={(e) => onChangeHowImage1Handler(e)}
                 ref={howImage1PreviewRef}
               />
-              <Input
+              {/* <Input
                 style={{ display: "none" }}
                 name="image"
                 id="image"
                 type="file"
                 onChange={(e) => onChangeHowImage2Handler(e)}
                 ref={howImage2PreviewRef}
-              />
+              /> */}
             </Flex>
           </Flex>
           <Flex direction="column" mb="16px">
@@ -813,10 +1368,9 @@ const CreateProject = () => {
               resize="none"
             />
           </Flex>
-          <Button my="16px" onClick={() => setQueryNumber("7")}>
+          <Button my="16px" onClick={handleSubmit6}>
             次へ
           </Button>
-          <Button onClick={() => setQueryNumber("5")}>戻る</Button>
         </QueryContainer>
       )}
       {queryNumber === "7" && (
@@ -832,8 +1386,8 @@ const CreateProject = () => {
             <Flex>
               {hopeImage1Preview ? (
                 <Image
-                  w="50%"
-                  h="120px"
+                  w="100%"
+                  h="200px"
                   alt=""
                   src={hopeImage1Preview}
                   onClick={onClickHopeImage1Preview}
@@ -841,13 +1395,13 @@ const CreateProject = () => {
                 />
               ) : (
                 <Flex
-                  w="50%"
-                  h="120px"
+                  w="100%"
+                  h="200px"
                   bg="gray.100"
                   onClick={onClickHopeImage1Preview}
                 ></Flex>
               )}
-              {hopeImage2Preview ? (
+              {/* {hopeImage2Preview ? (
                 <Image
                   w="50%"
                   h="120px"
@@ -863,7 +1417,7 @@ const CreateProject = () => {
                   bg="gray.300"
                   onClick={onClickHopeImage2Preview}
                 ></Flex>
-              )}
+              )} */}
               <Input
                 style={{ display: "none" }}
                 name="image"
@@ -872,14 +1426,14 @@ const CreateProject = () => {
                 onChange={(e) => onChangeHopeImage1Handler(e)}
                 ref={hopeImage1PreviewRef}
               />
-              <Input
+              {/* <Input
                 style={{ display: "none" }}
                 name="image"
                 id="image"
                 type="file"
                 onChange={(e) => onChangeHopeImage2Handler(e)}
                 ref={hopeImage2PreviewRef}
-              />
+              /> */}
             </Flex>
           </Flex>
           <Flex direction="column" mb="16px">
@@ -894,10 +1448,9 @@ const CreateProject = () => {
               resize="none"
             />
           </Flex>
-          <Button my="16px" onClick={() => setQueryNumber("8")}>
+          <Button my="16px" onClick={handleSubmit7}>
             次へ
           </Button>
-          <Button onClick={() => setQueryNumber("6")}>戻る</Button>
         </QueryContainer>
       )}
       {queryNumber === "8" && (
@@ -913,8 +1466,8 @@ const CreateProject = () => {
             <Flex>
               {goalImage1Preview ? (
                 <Image
-                  w="50%"
-                  h="120px"
+                  w="100%"
+                  h="200px"
                   alt=""
                   src={goalImage1Preview}
                   onClick={onClickGoalImage1Preview}
@@ -922,13 +1475,13 @@ const CreateProject = () => {
                 />
               ) : (
                 <Flex
-                  w="50%"
-                  h="120px"
+                  w="100%"
+                  h="200px"
                   bg="gray.100"
                   onClick={onClickGoalImage1Preview}
                 ></Flex>
               )}
-              {goalImage2Preview ? (
+              {/* {goalImage2Preview ? (
                 <Image
                   w="50%"
                   h="120px"
@@ -944,7 +1497,7 @@ const CreateProject = () => {
                   bg="gray.300"
                   onClick={onClickGoalImage2Preview}
                 ></Flex>
-              )}
+              )} */}
               <Input
                 style={{ display: "none" }}
                 name="image"
@@ -953,14 +1506,14 @@ const CreateProject = () => {
                 onChange={(e) => onChangeGoalImage1Handler(e)}
                 ref={goalImage1PreviewRef}
               />
-              <Input
+              {/* <Input
                 style={{ display: "none" }}
                 name="image"
                 id="image"
                 type="file"
                 onChange={(e) => onChangeGoalImage2Handler(e)}
                 ref={goalImage2PreviewRef}
-              />
+              /> */}
             </Flex>
           </Flex>
           <Flex direction="column" mb="16px">
@@ -975,10 +1528,9 @@ const CreateProject = () => {
               resize="none"
             />
           </Flex>
-          <Button type="submit" my="16px" onClick={handleSubmit}>
+          <Button type="submit" my="16px" onClick={handleSubmit8}>
             投稿する
           </Button>
-          <Button onClick={() => setQueryNumber("7")}>戻る</Button>
         </QueryContainer>
       )}
     </>

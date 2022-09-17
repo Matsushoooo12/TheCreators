@@ -28,7 +28,7 @@ const CreateProjectWork = () => {
 
   const project = projects?.find((project) => project.id === id);
   //   1
-  const [title, setTitle] = React.useState("");
+  const [title, setTitle] = React.useState(project?.title);
   const [thumbnail, setThumbnail] = React.useState("");
   const [thumbnailPreview, setThumbnailPreview] = React.useState("");
   const thumbnailPreviewRef = React.useRef(null);

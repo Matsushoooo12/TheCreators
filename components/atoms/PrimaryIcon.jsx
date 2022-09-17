@@ -3,7 +3,7 @@ import React from "react";
 import { IconType } from "react-icons";
 
 const PrimaryIcon = (props) => {
-  const { icon, text } = props;
+  const { icon, text, onClick } = props;
   return (
     <Flex
       direction="column"
@@ -11,6 +11,7 @@ const PrimaryIcon = (props) => {
       mr="40px"
       cursor="pointer"
       mb="16px"
+      onClick={onClick}
     >
       <Center
         w="56px"

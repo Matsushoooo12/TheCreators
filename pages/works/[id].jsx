@@ -51,7 +51,15 @@ const DetailWorks = () => {
         ref={topRef}
       >
         {/* <Image alt="" /> */}
-        <Flex mb="16px" w="100%" h="280px" bg="gray.500"></Flex>
+        <Image
+          src={works?.thumbnail}
+          mb="16px"
+          w="100%"
+          h="280px"
+          bg="gray.500"
+          alt=""
+          objectFit="cover"
+        />
         <Labels roles={works?.roles} tags={works?.tags} />
         <Heading fontSize="32px" my="16px">
           {works?.title}

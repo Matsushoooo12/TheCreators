@@ -137,7 +137,6 @@ const MessageListBar = () => {
       <Flex
         direction="column"
         w="100%"
-        flex={1}
         overflowX="scroll"
         className="scrollbar-off"
       >

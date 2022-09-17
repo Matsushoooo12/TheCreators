@@ -7,14 +7,19 @@ import {
   Icon,
   IconButton,
   Image,
+  Link,
   Text,
   VStack,
 } from "@chakra-ui/react";
 import dayjs from "dayjs";
-import { doc } from "firebase/firestore";
+import { collection, doc, orderBy, query } from "firebase/firestore";
 import { useRouter } from "next/router";
 import React from "react";
-import { useDocumentData } from "react-firebase-hooks/firestore";
+import {
+  useCollection,
+  useCollectionData,
+  useDocumentData,
+} from "react-firebase-hooks/firestore";
 import { BsFillPinFill } from "react-icons/bs";
 import { GrGroup, GrSteps } from "react-icons/gr";
 import { MdOutlineBookmarkBorder, MdOutlineStickyNote2 } from "react-icons/md";
@@ -28,6 +33,50 @@ const Group = () => {
   const { id } = router.query;
   const [isOpen, setIsOpen] = React.useState(true);
   const [project] = useDocumentData(doc(db, "projects", id));
+  const [isMessageOpen, setIsMessageOpen] = React.useState(false);
+  const omittedContent = (string) => {
+    // 定数で宣言
+    const MAX_LENGTH = 30;
+
+    // もしstringの文字数がMAX_LENGTH（今回は10）より大きかったら末尾に...を付け足して返す。
+    if (string.length > MAX_LENGTH) {
+      // substr(何文字目からスタートするか, 最大値);
+      return string.substr(0, MAX_LENGTH) + "...";
+    }
+    //　文字数がオーバーしていなければそのまま返す
+    return string;
+  };
+  const [usersSnapshot] = useCollection(collection(db, "users"));
+  const users = usersSnapshot?.docs.map((doc) => ({
+    id: doc.id,
+    ...doc.data(),
+  }));
+
+  const fileQuery = query(
+    collection(db, `projects/${id}/files`),
+    orderBy("timestamp")
+  );
+  const [files] = useCollectionData(fileQuery);
+
+  const pinnedFiles = files?.filter((file) =>
+    project?.pinnedFileLinks?.includes(file.link)
+  );
+
+  const searchUrlImage = (url) => {
+    if (url.indexOf("https://docs.google.com/document") != -1) {
+      return "/google-docs.png";
+    } else if (url.indexOf("https://docs.google.com/presentation") != -1) {
+      return "/google-slides.png";
+    }
+  };
+
+  const requestQuery = query(
+    collection(db, `projects/${id}/requests`),
+    orderBy("timestamp")
+  );
+  const [requests] = useCollectionData(requestQuery);
+
+  console.log("requests", requests);
   console.log("project", project);
   return (
     <Flex
@@ -124,307 +173,164 @@ const Group = () => {
             </Flex>
           </Flex>
         </Flex>
-        <DashboardItemContainer title="共有ファイル" mb="56px">
+        <DashboardItemContainer title="共有ファイル" mb="40px">
           <Flex mb="8px" color="gray.500" alignItems="center" cursor="pointer">
             <Icon as={BsFillPinFill} mr="8px" />
             <Text>Pinned file</Text>
           </Flex>
           <Flex flexWrap="wrap">
-            <Flex
-              w="49%"
-              h="160px"
-              p="24px"
-              bg="teal.500"
-              color="white"
-              boxShadow="md"
-              alignItems="center"
-              justifyContent="center"
-              mr="16px"
-              mb="16px"
-              position="relative"
-            >
-              <Text
-                p="4px 16px"
-                bg="teal.800"
-                color="white"
-                position="absolute"
-                top="0"
-                left="0"
-                fontWeight="bold"
-                borderColor="teal.500"
-              >
-                すべて
-              </Text>
-              <Image
-                src="/google-docs.png"
-                mr="16px"
-                w="80px"
-                objectFit="cover"
-                alt=""
-              />
-              <Flex direction="column">
-                <Heading fontSize="24px">基本的なきまり</Heading>
-              </Flex>
-            </Flex>
-            <Flex
-              w="49%"
-              h="160px"
-              p="24px"
-              bg="teal.500"
-              color="white"
-              boxShadow="md"
-              alignItems="center"
-              justifyContent="center"
-              mb="16px"
-              position="relative"
-            >
-              <Text
-                p="4px 16px"
-                bg="teal.800"
-                color="white"
-                position="absolute"
-                top="0"
-                left="0"
-                fontWeight="bold"
-                borderColor="teal.500"
-              >
-                すべて
-              </Text>
-              <Image
-                src="/google-slides.png"
-                mr="16px"
-                w="80px"
-                objectFit="cover"
-                alt=""
-              />
-              <Flex direction="column">
-                <Heading fontSize="24px">プレゼン資料</Heading>
-              </Flex>
-            </Flex>
-            <Flex
-              w="49%"
-              h="160px"
-              p="24px"
-              bg="teal.500"
-              color="white"
-              boxShadow="md"
-              alignItems="center"
-              justifyContent="center"
-              mr="16px"
-              mb="16px"
-              position="relative"
-            >
-              <Text
-                p="4px 16px"
-                bg="teal.800"
-                color="white"
-                position="absolute"
-                top="0"
-                left="0"
-                fontWeight="bold"
-                borderColor="teal.500"
-              >
-                デザイン
-              </Text>
-              <Image
-                src="/figma.png"
-                mr="16px"
-                w="80px"
-                objectFit="cover"
-                alt=""
-              />
-              <Flex direction="column">
-                <Heading fontSize="24px">デザイン</Heading>
-              </Flex>
-            </Flex>
+            {pinnedFiles?.length ? (
+              <>
+                {pinnedFiles?.map((file, i) => (
+                  <Link
+                    key={i}
+                    textDecoration="none"
+                    href={file.link}
+                    target="_blank"
+                    listStyleType="none"
+                  >
+                    <Flex
+                      cursor="pointer"
+                      w="240px"
+                      h="80px"
+                      p="24px"
+                      bg="teal.500"
+                      color="white"
+                      boxShadow="md"
+                      alignItems="center"
+                      justifyContent="center"
+                      mr="16px"
+                      mb="16px"
+                    >
+                      <Image
+                        src={searchUrlImage(file.link)}
+                        mr="16px"
+                        w="40px"
+                        objectFit="cover"
+                        alt=""
+                      />
+                      <Flex direction="column">
+                        <Heading fontSize="16px">{file.title}</Heading>
+                      </Flex>
+                    </Flex>
+                  </Link>
+                ))}
+              </>
+            ) : (
+              <Text>ピン留めされたファイルはありません</Text>
+            )}
           </Flex>
-        </DashboardItemContainer>
-        <DashboardItemContainer title="自分のTodo" mb="56px">
-          <HStack spacing="24px">
-            <Flex
-              bg="white"
-              boxShadow="md"
-              cursor="pointer"
-              width="250px"
-              mr="0"
-              mb="0"
-              h="100%"
-              p="24px"
-              alignItems="flex-start"
-              borderRadius="lg"
-              direction="column"
-            >
-              <HStack spacing="8px" mb="8px">
-                <Text
-                  fontSize="12px"
-                  p="4px 8px"
-                  borderRadius="full"
-                  //   border="1px solid black"
-                  bg="blue.600"
-                  color="white"
-                >
-                  構想段階
-                </Text>
-                <Text
-                  fontSize="12px"
-                  p="4px 8px"
-                  borderRadius="full"
-                  border="1px solid black"
-                  bg="white"
-                >
-                  エンジニア
-                </Text>
-              </HStack>
-              <Heading fontSize="16px" mb="8px">
-                テストテストテストテスト
-              </Heading>
-              <Flex mb="8px">
-                <Avatar src="" w="24px" h="24px" mr="8px" />
-                <Text>松本省吾</Text>
-              </Flex>
-              <Text fontSize="12px">
-                {dayjs("2022-11-03").format("MMM-DD HH:mm")}
-              </Text>
-            </Flex>
-            <Flex
-              bg="white"
-              boxShadow="md"
-              cursor="pointer"
-              width="250px"
-              mr="0"
-              mb="0"
-              h="100%"
-              p="24px"
-              alignItems="flex-start"
-              borderRadius="lg"
-              direction="column"
-            >
-              <HStack spacing="8px" mb="8px">
-                <Text
-                  fontSize="12px"
-                  p="4px 8px"
-                  borderRadius="full"
-                  //   border="1px solid black"
-                  bg="blue.600"
-                  color="white"
-                >
-                  構想段階
-                </Text>
-                <Text
-                  fontSize="12px"
-                  p="4px 8px"
-                  borderRadius="full"
-                  border="1px solid black"
-                  bg="white"
-                >
-                  エンジニア
-                </Text>
-              </HStack>
-              <Heading fontSize="16px" mb="8px">
-                テストテストテストテスト
-              </Heading>
-              <Flex mb="8px">
-                <Avatar src="" w="24px" h="24px" mr="8px" />
-                <Text>松本省吾</Text>
-              </Flex>
-              <Text fontSize="12px">
-                {dayjs("2022-11-03").format("MMM-DD HH:mm")}
-              </Text>
-            </Flex>
-            <Flex
-              bg="white"
-              boxShadow="md"
-              cursor="pointer"
-              width="250px"
-              mr="0"
-              mb="0"
-              h="100%"
-              p="24px"
-              alignItems="flex-start"
-              borderRadius="lg"
-              direction="column"
-            >
-              <HStack spacing="8px" mb="8px">
-                <Text
-                  fontSize="12px"
-                  p="4px 8px"
-                  borderRadius="full"
-                  //   border="1px solid black"
-                  bg="blue.600"
-                  color="white"
-                >
-                  構想段階
-                </Text>
-                <Text
-                  fontSize="12px"
-                  p="4px 8px"
-                  borderRadius="full"
-                  border="1px solid black"
-                  bg="white"
-                >
-                  エンジニア
-                </Text>
-              </HStack>
-              <Heading fontSize="16px" mb="8px">
-                テストテストテストテスト
-              </Heading>
-              <Flex mb="8px">
-                <Avatar src="" w="24px" h="24px" mr="8px" />
-                <Text>松本省吾</Text>
-              </Flex>
-              <Text fontSize="12px">
-                {dayjs("2022-11-03").format("MMM-DD HH:mm")}
-              </Text>
-            </Flex>
-          </HStack>
         </DashboardItemContainer>
         <DashboardItemContainer title="最近の参加申請" mb="56px">
-          <Flex
-            w="100%"
-            h="100%"
-            // bg="red.100"
-            // borderBottom="1px solid black"
-            justifyContent="center"
-            p="24px"
-            boxShadow="md"
-          >
-            <HStack w="100%" spacing="16px">
-              <Avatar src="" w="64px" h="64px" alignSelf="flex-start" />
-              <Flex direction="column" flex={1}>
-                <Heading fontSize="24px" mb="8px">
-                  松本省吾
-                </Heading>
-                <Labels
-                  roles={["エンジニア"]}
-                  tags={[
-                    { image: "", text: "Ruby on Rails" },
-                    { image: "", text: "Go" },
-                  ]}
-                />
-                <HStack spacing="16px" fontSize="12px" my="8px">
-                  <Flex>
-                    <Text mr="4px">マッチング数</Text>
-                    <Text fontWeight="bold">5</Text>
-                  </Flex>
-                  <Flex>
-                    <Text mr="4px">プロジェクト参加数</Text>
-                    <Text fontWeight="bold">5</Text>
-                  </Flex>
-                </HStack>
-                <Text mb="16px">
-                  ああああああああああああああああああああああああああああああ
-                  あああああああああああああああああああああああああああああああああ
-                </Text>
-                <Text alignSelf="flex-end" fontSize="12px">
-                  {dayjs("2022-07-23").format("MMM-DD HH:mm")}
-                </Text>
-              </Flex>
-              <VStack spacing="16px" w="160px" alignSelf="flex-start">
-                <Button w="100%">フォローする</Button>
-                <Button w="100%">許可する</Button>
-              </VStack>
-            </HStack>
-          </Flex>
+          {users?.filter((user) =>
+            requests?.find((request) => request.uid === user.id)
+          ).length ? (
+            <>
+              {users?.filter((user) =>
+                requests?.find((request) => request.uid === user.id)
+              ) &&
+                users
+                  ?.filter((user) =>
+                    requests?.find((request) => request.uid === user.id)
+                  )
+                  .slice(0, 1)
+                  .map((user) => (
+                    <>
+                      <HStack w="100%" spacing="16px" p="24px" boxShadow="md">
+                        <Avatar
+                          src={
+                            user.photoURL
+                              ? user.photoURL
+                              : "/the_creators_Symbol.png"
+                          }
+                          w="64px"
+                          h="64px"
+                          alignSelf="flex-start"
+                          bg="white"
+                          boxShadow="md"
+                        />
+                        <Flex direction="column" flex={1}>
+                          <Heading fontSize="24px" mb="8px">
+                            {user.displayName}
+                          </Heading>
+                          <Labels roles={user.roles} tags={user.tags} />
+                          <HStack spacing="16px" fontSize="12px" my="8px">
+                            <Flex>
+                              <Text mr="4px">マッチング数</Text>
+                              <Text fontWeight="bold">5</Text>
+                            </Flex>
+                            <Flex>
+                              <Text mr="4px">プロジェクト参加数</Text>
+                              <Text fontWeight="bold">5</Text>
+                            </Flex>
+                          </HStack>
+                          {isMessageOpen ? (
+                            <>
+                              <Text
+                                mb="16px"
+                                whiteSpace="pre-wrap"
+                                wordBreak="break-all"
+                              >
+                                {
+                                  requests?.find(
+                                    (request) => request.uid === user.id
+                                  ).text
+                                }
+                              </Text>
+                              <Text
+                                fontSize="12px"
+                                cursor="pointer"
+                                onClick={() => setIsMessageOpen(false)}
+                              >
+                                閉じる
+                              </Text>
+                            </>
+                          ) : (
+                            <>
+                              <Text
+                                mb="16px"
+                                whiteSpace="pre-wrap"
+                                wordBreak="break-all"
+                              >
+                                {omittedContent(
+                                  requests?.find(
+                                    (request) => request.uid === user.id
+                                  ).text
+                                )}
+                              </Text>
+                              <Text
+                                fontSize="12px"
+                                cursor="pointer"
+                                onClick={() => setIsMessageOpen(true)}
+                              >
+                                もっと見る
+                              </Text>
+                            </>
+                          )}
+                          <Text alignSelf="flex-end" fontSize="12px">
+                            {dayjs(
+                              requests?.find(
+                                (request) => request.uid === user.id
+                              ).date
+                            ).format("MMM-DD HH:mm")}
+                          </Text>
+                        </Flex>
+                        <VStack spacing="16px" w="160px" alignSelf="flex-start">
+                          <Button w="100%">フォローする</Button>
+                          <Button
+                            w="100%"
+                            onClick={() => handleAddMember(user)}
+                          >
+                            許可する
+                          </Button>
+                        </VStack>
+                      </HStack>
+                    </>
+                  ))}
+            </>
+          ) : (
+            <Text>まだ参加申請はありません。</Text>
+          )}
         </DashboardItemContainer>
       </Flex>
     </Flex>

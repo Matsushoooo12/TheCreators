@@ -92,10 +92,10 @@ const Projects = () => {
           >
             作成プロジェクト　
             {projects?.filter(
-              (project) => project.user.uid === currentUser?.uid
+              (project) => project.user?.uid === currentUser?.uid
             )?.length
               ? projects?.filter(
-                  (project) => project.user.uid === currentUser?.uid
+                  (project) => project.user?.uid === currentUser?.uid
                 )?.length
               : 0}
           </Tab>
@@ -160,12 +160,12 @@ const Projects = () => {
             <Flex w="800px" h="100%" direction="column" px="24px">
               <>
                 {projects?.filter(
-                  (project) => project.user.uid === currentUser?.uid
+                  (project) => project.user?.uid === currentUser?.uid
                 )?.length ? (
                   <>
                     {projects
                       ?.filter(
-                        (project) => project.user.uid === currentUser?.uid
+                        (project) => project.user?.uid === currentUser?.uid
                       )
                       ?.map((project) => (
                         <ProjectIndex

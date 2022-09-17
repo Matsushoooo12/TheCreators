@@ -5,7 +5,12 @@ import PrimaryLabel from "../atoms/PrimaryLabel";
 const Labels = (props) => {
   const { roles, tags } = props;
   return (
-    <HStack spacing="8px" fontSize="12px" alignSelf="flex-start">
+    <HStack
+      spacing="8px"
+      fontSize="12px"
+      alignSelf="flex-start"
+      flexWrap="wrap"
+    >
       {/* role */}
       {roles?.map((role) => (
         <PrimaryLabel

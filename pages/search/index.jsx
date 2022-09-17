@@ -13,7 +13,10 @@ import {
 import { collection } from "firebase/firestore";
 import { useRouter } from "next/router";
 import React from "react";
-import { useCollection } from "react-firebase-hooks/firestore";
+import {
+  useCollection,
+  useCollectionData,
+} from "react-firebase-hooks/firestore";
 import ProductCard from "../../components/molecules/ProductCard";
 import ProjectIndex from "../../components/organisms/projects/ProjectIndex";
 import UserIndex from "../../components/organisms/users/UserIndex";
@@ -38,6 +41,12 @@ const Search = () => {
     id: doc.id,
     ...doc.data(),
   }));
+
+  const userJoinProjects = (user) => {
+    return projects?.filter((project) =>
+      project.members?.find((member) => member.uid === user.id)
+    );
+  };
 
   const [worksSnapshot] = useCollection(collection(db, "works"));
   const works = worksSnapshot?.docs.map((doc) => ({
@@ -143,6 +152,7 @@ const Search = () => {
                 <UserIndex
                   hover={{ bg: "gray.100" }}
                   currentUser={currentUser}
+                  userJoinProjects={userJoinProjects(user)}
                   cursor="pointer"
                   key={user.id}
                   user={user}
@@ -168,6 +178,7 @@ const Search = () => {
                     mb="16px"
                     uid={work.user.uid}
                     title={work.title}
+                    thumbnail={work.thumbnail}
                     photoURL={work.user.photoURL}
                     displayName={work.user.displayName}
                     date={work.date}

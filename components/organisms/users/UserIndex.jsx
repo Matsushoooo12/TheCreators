@@ -159,6 +159,8 @@ const UserIndex = (props) => {
       } else {
         return "マッチング申請";
       }
+    } else if (!follows?.length && followers?.length) {
+      return "マッチング申請";
     }
   };
 
@@ -194,6 +196,8 @@ const UserIndex = (props) => {
       } else {
         return true;
       }
+    } else if (!follows?.length && !followers?.length) {
+      return false;
     }
   };
 
@@ -207,6 +211,8 @@ const UserIndex = (props) => {
       }
     }
   };
+
+  console.log("userJoinProjects", userJoinProjects);
 
   return (
     <Flex
@@ -227,7 +233,7 @@ const UserIndex = (props) => {
           boxShadow="lg"
         />
       </Flex>
-      <Flex direction="column">
+      <Flex direction="column" w="100%">
         <Flex mb="16px">
           <Flex alignItems="center" mr="24px">
             <Flex alignItems="center" mr="32px">
@@ -245,7 +251,9 @@ const UserIndex = (props) => {
             <Labels roles={user?.roles} tags={user?.tags} />
           </Flex>
         </Flex>
-        <Text mb="16px">{user?.text}</Text>
+        <Text mb="16px" whiteSpace="pre-wrap" wordBreak="break-all">
+          {user?.text}
+        </Text>
         <Flex justifyContent="space-between">
           <VStack spacing="8px">
             <HStack spacing="16px" alignItems="center">
@@ -292,17 +300,37 @@ const UserIndex = (props) => {
             </HStack>
           </VStack>
           <HStack spacing="8px">
-            {id !== currentUser?.uid && (
+            {currentUser?.uid && (
               <>
-                <Button
-                  // disabled={dmButtonToggle()}
-                  onClick={followingToggle() ? handleFollow : handleUnFollow}
-                  bg="gray.300"
-                >
-                  {matching()}
-                </Button>
-                {dmButtonToggle() && (
-                  <IconButton p="8px" onClick={handleCreateDm} as={FiMail} />
+                {user?.id !== currentUser?.uid && (
+                  <>
+                    {!follows?.length & !followers?.length ? (
+                      <>
+                        <Button bg="gray.300" onClick={handleFollow}>
+                          マッチング申請
+                        </Button>
+                      </>
+                    ) : (
+                      <>
+                        {dmButtonToggle() && (
+                          <IconButton
+                            p="8px"
+                            onClick={handleCreateDm}
+                            as={FiMail}
+                          />
+                        )}
+                        <Button
+                          // disabled={dmButtonToggle()}
+                          onClick={
+                            followingToggle() ? handleFollow : handleUnFollow
+                          }
+                          bg="gray.300"
+                        >
+                          {matching()}
+                        </Button>
+                      </>
+                    )}
+                  </>
                 )}
               </>
             )}

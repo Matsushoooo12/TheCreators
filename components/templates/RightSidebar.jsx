@@ -3,6 +3,7 @@ import {
   Button,
   Center,
   Flex,
+  FormControl,
   Heading,
   HStack,
   Icon,
@@ -37,12 +38,21 @@ import ProductCard from "../molecules/ProductCard";
 import { BsFillPinFill } from "react-icons/bs";
 import { HiBookOpen } from "react-icons/hi";
 import { IoEarth } from "react-icons/io5";
-import { useCollection, useDocumentData } from "react-firebase-hooks/firestore";
 import {
+  useCollection,
+  useCollectionData,
+  useDocumentData,
+} from "react-firebase-hooks/firestore";
+import {
+  addDoc,
   arrayRemove,
   arrayUnion,
   collection,
   doc,
+  orderBy,
+  query,
+  serverTimestamp,
+  setDoc,
   updateDoc,
 } from "firebase/firestore";
 import { auth, db } from "../../firebase/config";
@@ -54,6 +64,7 @@ import { FiMail } from "react-icons/fi";
 const RightSidebar = () => {
   const router = useRouter();
   const { id } = router.query;
+  const [requestInput, setRequestInput] = React.useState("");
   const {
     topScroll,
     summaryScroll,
@@ -65,7 +76,52 @@ const RightSidebar = () => {
     goalScroll,
     currentScroll,
     currentUser,
+    isAllRequest,
+    setIsAllRequest,
   } = React.useContext(AuthContext);
+
+  // 展示用
+  const [exhibitionName, setExhibitionName] = React.useState("");
+  const [exhibitionContent, setExhibitionContent] = React.useState("");
+
+  const handleExhibition = async (e) => {
+    e.preventDefault();
+    try {
+      await addDoc(collection(db, "exhibition"), {
+        name: exhibitionName,
+        content: exhibitionContent,
+      }).then(() => {
+        onClose();
+        setExhibitionContent("");
+        setExhibitionName("");
+      });
+    } catch (e) {
+      console.log(e);
+    }
+  };
+
+  const followsQuery = query(
+    collection(db, `users/${currentUser?.uid}/follows`)
+  );
+  const [follows] = useCollectionData(followsQuery);
+  const followersQuery = query(
+    collection(db, `users/${currentUser?.uid}/followers`)
+  );
+  const [followers] = useCollectionData(followersQuery);
+
+  const q = query(
+    collection(db, `projects/${id}/requests`),
+    orderBy("timestamp")
+  );
+  const [requests] = useCollectionData(q);
+
+  const [articlesSnapshot] = useCollection(collection(db, "articles"));
+  const articles = articlesSnapshot?.docs.map((doc) => ({
+    id: doc.id,
+    ...doc.data(),
+  }));
+
+  console.log("article", articles);
 
   const [usersSnapshot] = useCollection(collection(db, "users"));
   const users = usersSnapshot?.docs.map((doc) => ({
@@ -114,35 +170,59 @@ const RightSidebar = () => {
   const handleCreateBookmark = async () => {
     const projectRef = await doc(db, "projects", id);
     await updateDoc(projectRef, {
-      likeUsers: arrayUnion(user?.uid),
+      likeUsers: arrayUnion(user?.id),
     });
   };
 
   const handleRemoveBookmark = async () => {
     const projectRef = await doc(db, "projects", id);
     await updateDoc(projectRef, {
-      likeUsers: arrayRemove(user?.uid),
+      likeUsers: arrayRemove(user?.id),
     });
   };
 
   const handleCreateLikeWorks = async () => {
     const worksRef = await doc(db, "works", id);
     await updateDoc(worksRef, {
-      likeUsers: arrayUnion(user?.uid),
+      likeUsers: arrayUnion(user?.id),
     });
   };
 
   const handleRemoveLikeWorks = async () => {
     const worksRef = await doc(db, "works", id);
     await updateDoc(worksRef, {
-      likeUsers: arrayRemove(user.uid),
+      likeUsers: arrayRemove(user?.id),
     });
   };
 
+  console.log("eee", user);
+
   // 募集期限までの日数
-  const now = dayjs().format("YYYY-MM-DD");
+  const now = dayjs().format();
   const deadline = dayjs(detailProject?.deadline).format("YYYY-MM-DD");
   const days = dayjs(deadline).diff(now, "day");
+
+  console.log(
+    "yyy",
+    users?.filter(
+      (user) =>
+        user.id ===
+          followers?.find((follower) => follower.uid === user.id)?.uid &&
+        user.id === follows?.find((follow) => follow.uid === user.id)?.uid
+    )?.length
+  );
+
+  // request
+  const sendRequest = async (e) => {
+    e.preventDefault();
+    await setDoc(doc(db, `/projects/${id}/requests`, currentUser?.uid), {
+      text: requestInput,
+      uid: currentUser?.uid,
+      date: now,
+      timestamp: serverTimestamp(),
+    }).then(() => onClose());
+    setRequestInput("");
+  };
 
   const searchUrl = (url) => {
     if (
@@ -206,6 +286,15 @@ const RightSidebar = () => {
     if (
       window.location.href ===
       `${window.location.protocol}//${window.location.hostname}:${window.location.port}/`
+    ) {
+      return true;
+    }
+  };
+
+  const createProjectUrl = () => {
+    if (
+      window.location.href ===
+      `${window.location.protocol}//${window.location.hostname}:${window.location.port}/projects/new`
     ) {
       return true;
     }
@@ -317,6 +406,15 @@ const RightSidebar = () => {
       return true;
     }
   };
+
+  const result = project?.members?.filter(
+    (member, index, self) =>
+      self.findIndex((e) => e.role === member.role) === index
+  );
+
+  console.log("result", result);
+
+  console.log("vvv", isAllRequest);
   return (
     <Flex
       minW="350px"
@@ -358,7 +456,7 @@ const RightSidebar = () => {
                       0
                     )}
                   </Text>
-                  {project?.likeUsers?.includes(user?.uid) ? (
+                  {project?.likeUsers?.includes(user?.id) ? (
                     <Button
                       leftIcon={<MdOutlineBookmarkBorder />}
                       onClick={handleRemoveBookmark}
@@ -383,10 +481,10 @@ const RightSidebar = () => {
                 <Flex alignItems="flex-end" justifyContent="space-between">
                   <Text fontSize="40px" fontWeight="bold">
                     {/* {project?.members.length}人 */}
-                    {detailProject?.members.length}人
+                    {detailProject?.members?.length}人
                   </Text>
                   {detailProject?.members?.filter(
-                    (member) => member.uid === user?.uid
+                    (member) => member.uid === currentUser?.uid
                   ).length ? (
                     <Button
                       leftIcon={<GrGroup />}
@@ -397,9 +495,19 @@ const RightSidebar = () => {
                       グループへ
                     </Button>
                   ) : (
-                    <Button leftIcon={<GrGroup />} onClick={onOpen}>
-                      参加申請
-                    </Button>
+                    <>
+                      {requests?.find(
+                        (request) => request.uid === currentUser?.uid
+                      ) ? (
+                        <Button leftIcon={<GrGroup />} disabled>
+                          参加申請中
+                        </Button>
+                      ) : (
+                        <Button leftIcon={<GrGroup />} onClick={onOpen}>
+                          参加申請
+                        </Button>
+                      )}
+                    </>
                   )}
                 </Flex>
               </Flex>
@@ -512,16 +620,22 @@ const RightSidebar = () => {
                   <Flex mb="16px" fontWeight="bold" fontSize="24px">
                     参加希望メッセージを送る
                   </Flex>
-                  <Textarea
-                    resize="none"
-                    fontSize="16px"
-                    fontWeight="bold"
-                    placeholder="テーマに沿って自分を表現してみましょう"
-                    type="text"
-                    h="100px"
-                    mb="24px"
-                  />
-                  <Button w="100%">送信</Button>
+                  <FormControl as="form" onSubmit={(e) => sendRequest(e)}>
+                    <Textarea
+                      value={requestInput}
+                      onChange={(e) => setRequestInput(e.target.value)}
+                      resize="none"
+                      fontSize="16px"
+                      fontWeight="bold"
+                      placeholder="テーマに沿って自分を表現してみましょう"
+                      type="text"
+                      h="100px"
+                      mb="24px"
+                    />
+                    <Button w="100%" type="submit">
+                      送信
+                    </Button>
+                  </FormControl>
                 </ModalBody>
               </ModalContent>
             </Modal>
@@ -599,7 +713,7 @@ const RightSidebar = () => {
                       0
                     )}
                   </Text>
-                  {worksItem?.likeUsers?.includes(user?.uid) ? (
+                  {worksItem?.likeUsers?.includes(user?.id) ? (
                     <Button
                       leftIcon={<MdOutlineBookmarkBorder />}
                       onClick={handleRemoveLikeWorks}
@@ -709,12 +823,29 @@ const RightSidebar = () => {
             <Heading fontSize="24px" mb="16px">
               必要な専門
             </Heading>
+            <Labels roles={project?.roles} tags={[]} />
+            <Heading fontSize="24px" my="16px">
+              参加希望者の専門
+            </Heading>
             <VStack spacing="16px" w="100%">
-              {project?.roles?.map((role) => (
-                <Button leftIcon={<MdMovie />} w="100%">
-                  {role}
-                </Button>
-              ))}
+              <Button w="100%" onClick={() => setIsAllRequest("All")}>
+                すべて
+              </Button>
+              {users
+                ?.filter((user) =>
+                  requests?.find((request) => request.uid === user.id)
+                )
+                .map((user) => (
+                  <Button
+                    key={user.id}
+                    leftIcon={<MdMovie />}
+                    w="100%"
+                    onClick={() => setIsAllRequest(user.roles[0])}
+                  >
+                    {user.roles[0]}
+                  </Button>
+                ))}
+              {/* <Button leftIcon={<MdMovie />} w="100%"></Button> */}
             </VStack>
           </>
         )}
@@ -763,17 +894,40 @@ const RightSidebar = () => {
                 w="100%"
                 h="100%"
                 bg="gray.100"
-                p="24px"
+                p="16px"
                 direction="column"
                 borderRadius="lg"
+                flexWrap="wrap"
               >
                 <Labels
-                  roles={["エンジニア"]}
-                  tags={[{ image: "", text: "Ruby on Rails" }]}
+                  roles={
+                    users?.find((user) => project?.user.uid === user.id)?.roles
+                  }
+                  tags={
+                    users?.find((user) => project?.user.uid === user.id)?.tags
+                  }
                 />
                 <Flex alignItems="center" mt="16px">
-                  <Avatar src="" w="32px" h="32px" mr="8px" />
-                  <Text fontWeight="bold">松本省吾</Text>
+                  <Avatar
+                    src={
+                      users?.find((user) => project?.user.uid === user.id)
+                        ?.photoURL
+                        ? users?.find((user) => project?.user.uid === user.id)
+                            ?.photoURL
+                        : "/the_creators_Symbol.png"
+                    }
+                    w="32px"
+                    h="32px"
+                    mr="8px"
+                    bg="white"
+                    boxShadow="md"
+                  />
+                  <Text fontWeight="bold">
+                    {
+                      users?.find((user) => project?.user.uid === user.id)
+                        ?.displayName
+                    }
+                  </Text>
                 </Flex>
               </Flex>
             </VStack>
@@ -788,45 +942,23 @@ const RightSidebar = () => {
               <Text fontWeight="bold" mb="16px">
                 The Creatorsのおすすめ記事
               </Text>
-              <Flex
-                direction="column"
-                borderBottom="1px solid black"
-                borderColor="gray.300"
-                py="16px"
-              >
-                <Text mb="8px">
-                  あああああああああああああああ あああああああああああああああ
-                  あああああああああああああああ
-                  <br />
-                </Text>
-                <Text fontSize="12px">{dayjs().format("MMM-DD HH:mm")}</Text>
-              </Flex>
-              <Flex
-                direction="column"
-                borderBottom="1px solid black"
-                borderColor="gray.300"
-                py="16px"
-              >
-                <Text mb="8px">
-                  あああああああああああああああ あああああああああああああああ
-                  あああああああああああああああ
-                  <br />
-                </Text>
-                <Text fontSize="12px">{dayjs().format("MMM-DD HH:mm")}</Text>
-              </Flex>
-              <Flex
-                direction="column"
-                borderBottom="1px solid black"
-                borderColor="gray.300"
-                py="16px"
-              >
-                <Text mb="8px">
-                  あああああああああああああああ あああああああああああああああ
-                  あああああああああああああああ
-                  <br />
-                </Text>
-                <Text fontSize="12px">{dayjs().format("MMM-DD HH:mm")}</Text>
-              </Flex>
+              {articles
+                ?.filter((article) => article.roles.includes(user?.roles[0]))
+                ?.slice(0, 3)
+                .map((article) => (
+                  <Flex
+                    key={article.id}
+                    direction="column"
+                    borderBottom="1px solid black"
+                    borderColor="gray.300"
+                    py="16px"
+                  >
+                    <Text mb="8px">{article.title}</Text>
+                    <Text fontSize="12px">
+                      {dayjs(article.date).format("MMM-DD HH:mm")}
+                    </Text>
+                  </Flex>
+                ))}
             </Flex>
           </>
         )}
@@ -846,7 +978,7 @@ const RightSidebar = () => {
               <Flex alignItems="center">
                 <Icon mr="8px" fontSize="32px" as={GrGroup} />
                 <Text fontSize="32px" fontWeight="bold">
-                  9
+                  {project?.members.length}
                 </Text>
               </Flex>
               <Text>メンバー数</Text>
@@ -854,13 +986,23 @@ const RightSidebar = () => {
             <Flex direction="column" mt="16px">
               <Text fontWeight="bold">内訳</Text>
               <UnorderedList>
-                <ListItem>
-                  <Flex>
-                    <Text mr="8px">エンジニア</Text>
-                    <Text fontWeight="bold">5人</Text>
-                  </Flex>
-                </ListItem>
-                <ListItem>
+                {result?.map((r, i) => (
+                  <ListItem key={i}>
+                    <Flex>
+                      <Text mr="8px">{r.role}</Text>
+                      <Text fontWeight="bold">
+                        {
+                          project?.members?.filter(
+                            (member) => member.role === r.role
+                          ).length
+                        }
+                        人
+                      </Text>
+                    </Flex>
+                  </ListItem>
+                ))}
+
+                {/* <ListItem>
                   <Flex>
                     <Text mr="8px">デザイナー</Text>
                     <Text fontWeight="bold">2人</Text>
@@ -871,7 +1013,7 @@ const RightSidebar = () => {
                     <Text mr="8px">プランナー</Text>
                     <Text fontWeight="bold">2人</Text>
                   </Flex>
-                </ListItem>
+                </ListItem> */}
               </UnorderedList>
             </Flex>
           </>
@@ -885,45 +1027,23 @@ const RightSidebar = () => {
               <Text fontWeight="bold" mb="16px">
                 The Creatorsのおすすめ記事
               </Text>
-              <Flex
-                direction="column"
-                borderBottom="1px solid black"
-                borderColor="gray.300"
-                py="16px"
-              >
-                <Text mb="8px">
-                  あああああああああああああああ あああああああああああああああ
-                  あああああああああああああああ
-                  <br />
-                </Text>
-                <Text fontSize="12px">{dayjs().format("MMM-DD HH:mm")}</Text>
-              </Flex>
-              <Flex
-                direction="column"
-                borderBottom="1px solid black"
-                borderColor="gray.300"
-                py="16px"
-              >
-                <Text mb="8px">
-                  あああああああああああああああ あああああああああああああああ
-                  あああああああああああああああ
-                  <br />
-                </Text>
-                <Text fontSize="12px">{dayjs().format("MMM-DD HH:mm")}</Text>
-              </Flex>
-              <Flex
-                direction="column"
-                borderBottom="1px solid black"
-                borderColor="gray.300"
-                py="16px"
-              >
-                <Text mb="8px">
-                  あああああああああああああああ あああああああああああああああ
-                  あああああああああああああああ
-                  <br />
-                </Text>
-                <Text fontSize="12px">{dayjs().format("MMM-DD HH:mm")}</Text>
-              </Flex>
+              {articles
+                ?.filter((article) => article.roles.includes(user?.roles[0]))
+                ?.slice(0, 3)
+                .map((article) => (
+                  <Flex
+                    key={article.id}
+                    direction="column"
+                    borderBottom="1px solid black"
+                    borderColor="gray.300"
+                    py="16px"
+                  >
+                    <Text mb="8px">{article.title}</Text>
+                    <Text fontSize="12px">
+                      {dayjs(article.date).format("MMM-DD HH:mm")}
+                    </Text>
+                  </Flex>
+                ))}
             </Flex>
           </>
         )}
@@ -936,56 +1056,40 @@ const RightSidebar = () => {
               <Text fontWeight="bold" mb="16px">
                 The Creatorsのおすすめ記事
               </Text>
-              <Flex
-                direction="column"
-                borderBottom="1px solid black"
-                borderColor="gray.300"
-                py="16px"
-              >
-                <Text mb="8px">
-                  あああああああああああああああ あああああああああああああああ
-                  あああああああああああああああ
-                  <br />
-                </Text>
-                <Text fontSize="12px">{dayjs().format("MMM-DD HH:mm")}</Text>
-              </Flex>
-              <Flex
-                direction="column"
-                borderBottom="1px solid black"
-                borderColor="gray.300"
-                py="16px"
-              >
-                <Text mb="8px">
-                  あああああああああああああああ あああああああああああああああ
-                  あああああああああああああああ
-                  <br />
-                </Text>
-                <Text fontSize="12px">{dayjs().format("MMM-DD HH:mm")}</Text>
-              </Flex>
-              <Flex
-                direction="column"
-                borderBottom="1px solid black"
-                borderColor="gray.300"
-                py="16px"
-              >
-                <Text mb="8px">
-                  あああああああああああああああ あああああああああああああああ
-                  あああああああああああああああ
-                  <br />
-                </Text>
-                <Text fontSize="12px">{dayjs().format("MMM-DD HH:mm")}</Text>
-              </Flex>
+              {articles
+                ?.filter((article) => article.roles.includes(user?.roles[0]))
+                ?.slice(0, 3)
+                .map((article) => (
+                  <Flex
+                    key={article.id}
+                    direction="column"
+                    borderBottom="1px solid black"
+                    borderColor="gray.300"
+                    py="16px"
+                  >
+                    <Text mb="8px">{article.title}</Text>
+                    <Text fontSize="12px">
+                      {dayjs(article.date).format("MMM-DD HH:mm")}
+                    </Text>
+                  </Flex>
+                ))}
             </Flex>
           </>
         )}
         {searchUrl(window.location.href) && (
           <>
-            <Flex w="100%">
-              <Image w="100%" objectFit="cover" src="/add-01.jpeg" alt="" />
-            </Flex>
             <Flex direction="column" alignItems="center">
               <Flex direction="column" mt="20px" w="290px">
-                <Heading fontSize="16px">分野</Heading>
+                <Heading
+                  fontSize="20px"
+                  cursor="pointer"
+                  mb="16px"
+                  onClick={() => router.push("/search?tab=projects")}
+                  color="teal.500"
+                >
+                  すべて
+                </Heading>
+                <Heading fontSize="16px">専門</Heading>
                 <Flex direction="column" fontSize="14px" mt="10px">
                   <Flex
                     cursor="pointer"
@@ -993,8 +1097,9 @@ const RightSidebar = () => {
                     _hover={{ bg: "gray.100" }}
                     justifyContent="space-between"
                     alignItems="center"
+                    onClick={() => router.push("/search/specialty/エンジニア")}
                   >
-                    <Text>Web開発エンジニア</Text>
+                    <Text>エンジニア</Text>
                     <Icon as={AiOutlinePlus} />
                   </Flex>
                   <Flex
@@ -1003,8 +1108,9 @@ const RightSidebar = () => {
                     _hover={{ bg: "gray.100" }}
                     justifyContent="space-between"
                     alignItems="center"
+                    onClick={() => router.push("/search/specialty/デザイナー")}
                   >
-                    <Text>アプリ開発エンジニア</Text>
+                    <Text>デザイナー</Text>
                     <Icon as={AiOutlinePlus} />
                   </Flex>
                   <Flex
@@ -1013,8 +1119,9 @@ const RightSidebar = () => {
                     _hover={{ bg: "gray.100" }}
                     justifyContent="space-between"
                     alignItems="center"
+                    onClick={() => router.push("/search/specialty/ライター")}
                   >
-                    <Text>インフラエンジニア</Text>
+                    <Text>ライター</Text>
                     <Icon as={AiOutlinePlus} />
                   </Flex>
                   <Flex
@@ -1023,8 +1130,9 @@ const RightSidebar = () => {
                     _hover={{ bg: "gray.100" }}
                     justifyContent="space-between"
                     alignItems="center"
+                    onClick={() => router.push("/search/specialty/動画編集者")}
                   >
-                    <Text>UIデザイナー</Text>
+                    <Text>動画編集者</Text>
                     <Icon as={AiOutlinePlus} />
                   </Flex>
                   <Flex
@@ -1033,8 +1141,9 @@ const RightSidebar = () => {
                     _hover={{ bg: "gray.100" }}
                     justifyContent="space-between"
                     alignItems="center"
+                    onClick={() => router.push("/search/specialty/プランター")}
                   >
-                    <Text>イラストレーター</Text>
+                    <Text>プランナー</Text>
                     <Icon as={AiOutlinePlus} />
                   </Flex>
                   <Flex
@@ -1043,16 +1152,9 @@ const RightSidebar = () => {
                     _hover={{ bg: "gray.100" }}
                     justifyContent="space-between"
                     alignItems="center"
-                  >
-                    <Text>動画編集</Text>
-                    <Icon as={AiOutlinePlus} />
-                  </Flex>
-                  <Flex
-                    cursor="pointer"
-                    mb="6px"
-                    _hover={{ bg: "gray.100" }}
-                    justifyContent="space-between"
-                    alignItems="center"
+                    onClick={() =>
+                      router.push("/search/specialty/3DCGモデラー")
+                    }
                   >
                     <Text>3DCGモデラー</Text>
                     <Icon as={AiOutlinePlus} />
@@ -1063,23 +1165,19 @@ const RightSidebar = () => {
                     _hover={{ bg: "gray.100" }}
                     justifyContent="space-between"
                     alignItems="center"
+                    onClick={() =>
+                      router.push("/search/specialty/アニメーター")
+                    }
                   >
-                    <Text>シナリオライター</Text>
-                    <Icon as={AiOutlinePlus} />
-                  </Flex>
-                  <Flex
-                    cursor="pointer"
-                    mb="6px"
-                    _hover={{ bg: "gray.100" }}
-                    justifyContent="space-between"
-                    alignItems="center"
-                  >
-                    <Text>その他</Text>
+                    <Text>アニメーター</Text>
                     <Icon as={AiOutlinePlus} />
                   </Flex>
                 </Flex>
               </Flex>
               <Flex direction="column" mt="20px" w="290px">
+                <Heading fontSize="20px" cursor="pointer" mb="16px">
+                  プロジェクト
+                </Heading>
                 <Heading fontSize="16px">進行状態</Heading>
                 <Flex direction="column" fontSize="14px" mt="10px">
                   <Flex
@@ -1088,8 +1186,11 @@ const RightSidebar = () => {
                     _hover={{ bg: "gray.100" }}
                     justifyContent="space-between"
                     alignItems="center"
+                    onClick={() =>
+                      router.push(`/search/projects/status/構想段階`)
+                    }
                   >
-                    <Text>未スタート</Text>
+                    <Text>構想段階</Text>
                     <Icon as={AiOutlinePlus} />
                   </Flex>
                   <Flex
@@ -1098,8 +1199,9 @@ const RightSidebar = () => {
                     _hover={{ bg: "gray.100" }}
                     justifyContent="space-between"
                     alignItems="center"
+                    onClick={() => router.push(`/search/projects/status/序盤`)}
                   >
-                    <Text>進行中</Text>
+                    <Text>序盤</Text>
                     <Icon as={AiOutlinePlus} />
                   </Flex>
                   <Flex
@@ -1108,8 +1210,20 @@ const RightSidebar = () => {
                     _hover={{ bg: "gray.100" }}
                     justifyContent="space-between"
                     alignItems="center"
+                    onClick={() => router.push(`/search/projects/status/中盤`)}
                   >
-                    <Text>完了</Text>
+                    <Text>中盤</Text>
+                    <Icon as={AiOutlinePlus} />
+                  </Flex>
+                  <Flex
+                    cursor="pointer"
+                    mb="6px"
+                    _hover={{ bg: "gray.100" }}
+                    justifyContent="space-between"
+                    alignItems="center"
+                    onClick={() => router.push(`/search/projects/status/終盤`)}
+                  >
+                    <Text>終盤</Text>
                     <Icon as={AiOutlinePlus} />
                   </Flex>
                 </Flex>
@@ -1139,6 +1253,61 @@ const RightSidebar = () => {
                   </Flex>
                 </Flex>
               </Flex>
+              <Flex direction="column" mt="20px" w="290px">
+                <Heading fontSize="16px">目的</Heading>
+                <Flex direction="column" fontSize="14px" mt="10px">
+                  <Flex
+                    cursor="pointer"
+                    mb="6px"
+                    _hover={{ bg: "gray.100" }}
+                    justifyContent="space-between"
+                    alignItems="center"
+                  >
+                    <Text>ポートフォリオ</Text>
+                    <Icon as={AiOutlinePlus} />
+                  </Flex>
+                  <Flex
+                    cursor="pointer"
+                    mb="6px"
+                    _hover={{ bg: "gray.100" }}
+                    justifyContent="space-between"
+                    alignItems="center"
+                  >
+                    <Text>コンテスト</Text>
+                    <Icon as={AiOutlinePlus} />
+                  </Flex>
+                  <Flex
+                    cursor="pointer"
+                    mb="6px"
+                    _hover={{ bg: "gray.100" }}
+                    justifyContent="space-between"
+                    alignItems="center"
+                  >
+                    <Text>起業</Text>
+                    <Icon as={AiOutlinePlus} />
+                  </Flex>
+                  <Flex
+                    cursor="pointer"
+                    mb="6px"
+                    _hover={{ bg: "gray.100" }}
+                    justifyContent="space-between"
+                    alignItems="center"
+                  >
+                    <Text>新規事業</Text>
+                    <Icon as={AiOutlinePlus} />
+                  </Flex>
+                  <Flex
+                    cursor="pointer"
+                    mb="6px"
+                    _hover={{ bg: "gray.100" }}
+                    justifyContent="space-between"
+                    alignItems="center"
+                  >
+                    <Text>学習</Text>
+                    <Icon as={AiOutlinePlus} />
+                  </Flex>
+                </Flex>
+              </Flex>
             </Flex>
           </>
         )}
@@ -1151,46 +1320,58 @@ const RightSidebar = () => {
               <Text fontWeight="bold" mb="16px">
                 The Creatorsのおすすめ記事
               </Text>
-              <Flex
-                direction="column"
-                borderBottom="1px solid black"
-                borderColor="gray.300"
-                py="16px"
-              >
-                <Text mb="8px">
-                  あああああああああああああああ あああああああああああああああ
-                  あああああああああああああああ
-                  <br />
-                </Text>
-                <Text fontSize="12px">{dayjs().format("MMM-DD HH:mm")}</Text>
-              </Flex>
-              <Flex
-                direction="column"
-                borderBottom="1px solid black"
-                borderColor="gray.300"
-                py="16px"
-              >
-                <Text mb="8px">
-                  あああああああああああああああ あああああああああああああああ
-                  あああああああああああああああ
-                  <br />
-                </Text>
-                <Text fontSize="12px">{dayjs().format("MMM-DD HH:mm")}</Text>
-              </Flex>
-              <Flex
-                direction="column"
-                borderBottom="1px solid black"
-                borderColor="gray.300"
-                py="16px"
-              >
-                <Text mb="8px">
-                  あああああああああああああああ あああああああああああああああ
-                  あああああああああああああああ
-                  <br />
-                </Text>
-                <Text fontSize="12px">{dayjs().format("MMM-DD HH:mm")}</Text>
-              </Flex>
+              {articles
+                ?.filter((article) => article.roles.includes(user?.roles[0]))
+                ?.slice(0, 3)
+                .map((article) => (
+                  <Flex
+                    key={article.id}
+                    direction="column"
+                    borderBottom="1px solid black"
+                    borderColor="gray.300"
+                    py="16px"
+                  >
+                    <Text mb="8px">{article.title}</Text>
+                    <Text fontSize="12px">
+                      {dayjs(article.date).format("MMM-DD HH:mm")}
+                    </Text>
+                  </Flex>
+                ))}
             </Flex>
+            <Button mt="40px" bg="teal.500" color="white" onClick={onOpen}>
+              感想フォーム
+            </Button>
+            <Modal isCentered isOpen={isOpen} onClose={onClose} size="xl">
+              <ModalOverlay />
+              <ModalContent>
+                <ModalCloseButton />
+                <ModalBody my="40px">
+                  <Flex mb="16px" fontWeight="bold" fontSize="24px">
+                    感想を送る
+                  </Flex>
+                  <FormControl as="form" onSubmit={(e) => handleExhibition(e)}>
+                    <Input
+                      placeholder="お名前を入力して下さい"
+                      value={exhibitionName}
+                      onChange={(e) => setExhibitionName(e.target.value)}
+                      mb="16px"
+                    />
+                    <Textarea
+                      value={exhibitionContent}
+                      onChange={(e) => setExhibitionContent(e.target.value)}
+                      resize="none"
+                      placeholder="感想を記入してください"
+                      type="text"
+                      h="100px"
+                      mb="24px"
+                    />
+                    <Button w="100%" type="submit">
+                      送信
+                    </Button>
+                  </FormControl>
+                </ModalBody>
+              </ModalContent>
+            </Modal>
           </>
         )}
         {userProjectsUrl() && (
@@ -1198,33 +1379,27 @@ const RightSidebar = () => {
             <Flex w="100%" mb="16px">
               <Image w="100%" objectFit="cover" src="/add-01.jpeg" alt="" />
             </Flex>
-            <Flex direction="column">
-              <Flex
-                mb="8px"
-                color="gray.500"
-                alignItems="center"
-                cursor="pointer"
-              >
-                <Icon as={BsFillPinFill} mr="8px" />
-                <Text>Pinned file</Text>
-              </Flex>
-              <ProductCard
-                key={pinnedProject?.id}
-                width="250px"
-                mr="0"
-                mb="0"
-                title={pinnedProject?.title}
-                photoURL={pinnedProject?.user.photoURL}
-                displayName={pinnedProject?.user.displayName}
-                date={`~ ${dayjs(pinnedProject?.deadline).format(
-                  "YYYY/MM/DD"
-                )}`}
-                onClick={() => router.push(`/projects/${pinnedProject?.id}`)}
-                roles={pinnedProject?.roles.slice(0, 1)}
-                tags={pinnedProject?.tags.slice(0, 1)}
-                likeUsers={pinnedProject?.likeUsers}
-                uid={pinnedProject?.user.uid}
-              />
+            <Flex direction="column" w="290px" p="24px" bg="gray.100">
+              <Text fontWeight="bold" mb="16px">
+                The Creatorsのおすすめ記事
+              </Text>
+              {articles
+                ?.filter((article) => article.roles.includes(user?.roles[0]))
+                ?.slice(0, 3)
+                .map((article) => (
+                  <Flex
+                    key={article.id}
+                    direction="column"
+                    borderBottom="1px solid black"
+                    borderColor="gray.300"
+                    py="16px"
+                  >
+                    <Text mb="8px">{article.title}</Text>
+                    <Text fontSize="12px">
+                      {dayjs(article.date).format("MMM-DD HH:mm")}
+                    </Text>
+                  </Flex>
+                ))}
             </Flex>
           </>
         )}
@@ -1233,88 +1408,56 @@ const RightSidebar = () => {
             <Flex w="100%" mb="16px">
               <Image w="100%" objectFit="cover" src="/add-01.jpeg" alt="" />
             </Flex>
-            <Flex direction="column">
-              <Text fontWeight="bold" mb="8px">
-                承認待ち
+            <Flex direction="column" w="290px" p="24px" bg="gray.100">
+              <Text fontWeight="bold" mb="16px">
+                The Creatorsのおすすめ記事
               </Text>
-              <Flex
-                direction="column"
-                bg="gray.100"
-                borderBottom="1px solid black"
-                borderColor="gray.300"
-                p="24px"
-              >
-                <Labels
-                  roles={["エンジニア"]}
-                  tags={[{ image: "", text: "Ruby on Rails" }]}
-                />
-                <Flex my="8px">
-                  <Avatar src="" w="24px" h="24px" mr="8px" />
-                  <Text>松本省吾</Text>
-                </Flex>
-                <HStack spacing="16px" fontSize="12px">
-                  <Flex>
-                    <Text mr="4px">プロジェクト参加数</Text>
-                    <Text>5</Text>
+              {articles
+                ?.filter((article) => article.roles.includes(user?.roles[0]))
+                ?.slice(0, 3)
+                .map((article) => (
+                  <Flex
+                    key={article.id}
+                    direction="column"
+                    borderBottom="1px solid black"
+                    borderColor="gray.300"
+                    py="16px"
+                  >
+                    <Text mb="8px">{article.title}</Text>
+                    <Text fontSize="12px">
+                      {dayjs(article.date).format("MMM-DD HH:mm")}
+                    </Text>
                   </Flex>
-                  <Flex>
-                    <Text mr="4px">マッチング数</Text>
-                    <Text>5</Text>
+                ))}
+            </Flex>
+          </>
+        )}
+        {createProjectUrl() && (
+          <>
+            <Flex w="100%" mb="16px">
+              <Image w="100%" objectFit="cover" src="/add-01.jpeg" alt="" />
+            </Flex>
+            <Flex direction="column" w="290px" p="24px" bg="gray.100">
+              <Text fontWeight="bold" mb="16px">
+                The Creatorsのおすすめ記事
+              </Text>
+              {articles
+                ?.filter((article) => article.roles.includes(user?.roles[0]))
+                ?.slice(0, 3)
+                .map((article) => (
+                  <Flex
+                    key={article.id}
+                    direction="column"
+                    borderBottom="1px solid black"
+                    borderColor="gray.300"
+                    py="16px"
+                  >
+                    <Text mb="8px">{article.title}</Text>
+                    <Text fontSize="12px">
+                      {dayjs(article.date).format("MMM-DD HH:mm")}
+                    </Text>
                   </Flex>
-                </HStack>
-              </Flex>
-              <Flex
-                direction="column"
-                bg="gray.100"
-                borderBottom="1px solid black"
-                borderColor="gray.300"
-                p="24px"
-              >
-                <Labels
-                  roles={["エンジニア"]}
-                  tags={[{ image: "", text: "Ruby on Rails" }]}
-                />
-                <Flex my="8px">
-                  <Avatar src="" w="24px" h="24px" mr="8px" />
-                  <Text>松本省吾</Text>
-                </Flex>
-                <HStack spacing="16px" fontSize="12px">
-                  <Flex>
-                    <Text mr="4px">プロジェクト参加数</Text>
-                    <Text>5</Text>
-                  </Flex>
-                  <Flex>
-                    <Text mr="4px">マッチング数</Text>
-                    <Text>5</Text>
-                  </Flex>
-                </HStack>
-              </Flex>
-              <Flex
-                direction="column"
-                bg="gray.100"
-                borderBottom="1px solid black"
-                borderColor="gray.300"
-                p="24px"
-              >
-                <Labels
-                  roles={["エンジニア"]}
-                  tags={[{ image: "", text: "Ruby on Rails" }]}
-                />
-                <Flex my="8px">
-                  <Avatar src="" w="24px" h="24px" mr="8px" />
-                  <Text>松本省吾</Text>
-                </Flex>
-                <HStack spacing="16px" fontSize="12px">
-                  <Flex>
-                    <Text mr="4px">プロジェクト参加数</Text>
-                    <Text>5</Text>
-                  </Flex>
-                  <Flex>
-                    <Text mr="4px">マッチング数</Text>
-                    <Text>5</Text>
-                  </Flex>
-                </HStack>
-              </Flex>
+                ))}
             </Flex>
           </>
         )}

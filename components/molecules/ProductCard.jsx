@@ -5,6 +5,7 @@ import {
   Heading,
   HStack,
   Icon,
+  Image,
   Text,
   VStack,
 } from "@chakra-ui/react";
@@ -28,6 +29,7 @@ const ProductCard = (props) => {
     tags,
     roles,
     uid,
+    thumbnail,
   } = props;
   const router = useRouter();
   return (
@@ -45,18 +47,35 @@ const ProductCard = (props) => {
     >
       {/* image */}
       <Box
-        bg="green.100"
+        // bg="green.100"
         w="100%"
         h="96px"
         borderTopRadius="lg"
         position="relative"
       >
-        <Flex position="absolute" top="8px" right="8px" alignItems="center">
-          <Icon fontSize="16px" as={MdOutlineBookmarkBorder} />
-          <Text fontSize="16px" fontWeight="bold">
+        <Flex
+          position="absolute"
+          zIndex="10"
+          top="8px"
+          right="8px"
+          alignItems="center"
+        >
+          <Icon color="teal.500" fontSize="16px" as={MdOutlineBookmarkBorder} />
+          <Text color="teal.500" fontSize="16px" fontWeight="bold">
             {likeUsers?.length ? likeUsers.length : 0}
           </Text>
         </Flex>
+        <Image
+          position="absolute"
+          left="0"
+          top="0"
+          w="100%"
+          h="100%"
+          src={thumbnail}
+          alt=""
+          zIndex="5"
+          objectFit="cover"
+        />
       </Box>
       <Labels tags={tags?.slice(0, 1)} roles={roles?.slice(0, 1)} />
       <Heading fontSize="16px" onClick={onClick}>

@@ -8,8 +8,8 @@ import { onAuthStateChanged } from "firebase/auth";
 import { auth, db } from "../firebase/config";
 import { useScroll } from "../hooks/useScroll";
 import { useRouter } from "next/router";
-import { useDocumentData } from "react-firebase-hooks/firestore";
-import { doc } from "firebase/firestore";
+import { useCollection, useDocumentData } from "react-firebase-hooks/firestore";
+import { collection, doc } from "firebase/firestore";
 import MessageListBar from "../components/templates/MessageList";
 import ProjectGroupMessageList from "../components/templates/ProjectGroupMessageList";
 
@@ -20,6 +20,9 @@ function MyApp({ Component, pageProps }) {
   const { id } = router.query;
   const [currentUser, setCurrentUser] = React.useState(null);
   const [loading, setLoading] = React.useState(true);
+
+  //   groupRequest
+  const [isAllRequest, setIsAllRequest] = React.useState("All");
 
   // 目次
   // project
@@ -167,6 +170,8 @@ function MyApp({ Component, pageProps }) {
           currentRef,
           topScroll,
           topRef,
+          isAllRequest,
+          setIsAllRequest,
         }}
       >
         {!authUrl(window.location.href) ? (

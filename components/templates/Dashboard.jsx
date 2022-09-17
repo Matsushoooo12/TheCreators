@@ -46,7 +46,7 @@ const Dashboard = () => {
     (project) => project.id === user?.pinnedProjectId
   );
   const userAllProjects = projects?.filter(
-    (project) => project.user.uid === currentUser?.uid
+    (project) => project.user?.uid === currentUser?.uid
   );
 
   const userJoinProjects = projects?.filter((project) =>
@@ -127,23 +127,30 @@ const Dashboard = () => {
         mb="56px"
       >
         <HStack spacing="24px">
-          {likeProjects?.slice(-3).map((project) => (
-            <ProductCard
-              key={project.id}
-              width="250px"
-              mr="0"
-              mb="0"
-              title={project.title}
-              photoURL={project.user.photoURL}
-              displayName={project.user.displayName}
-              date={`~ ${dayjs(project.deadline).format("YYYY/MM/DD")}`}
-              onClick={() => router.push(`/projects/${project.id}`)}
-              roles={project.roles.slice(0, 1)}
-              tags={project.tags.slice(0, 1)}
-              likeUsers={project.likeUsers}
-              uid={project.user.uid}
-            />
-          ))}
+          {likeProjects?.length ? (
+            <>
+              {likeProjects?.slice(-3).map((project) => (
+                <ProductCard
+                  thumbnail={project.thumbnail}
+                  key={project.id}
+                  width="250px"
+                  mr="0"
+                  mb="0"
+                  title={project.title}
+                  photoURL={project.user.photoURL}
+                  displayName={project.user.displayName}
+                  date={`~ ${dayjs(project.deadline).format("YYYY/MM/DD")}`}
+                  onClick={() => router.push(`/projects/${project.id}`)}
+                  roles={project.roles.slice(0, 1)}
+                  tags={project.tags.slice(0, 1)}
+                  likeUsers={project.likeUsers}
+                  uid={project.user.uid}
+                />
+              ))}
+            </>
+          ) : (
+            <Text>まだプロジェクトがありません</Text>
+          )}
         </HStack>
       </DashboardItemContainer>
       <HStack spacing="32px" mb="32px">
@@ -151,21 +158,21 @@ const Dashboard = () => {
           title="プロジェクトを探す"
           text="200プロジェクト"
           icon={MdOutlineStickyNote2}
-          color="blue.100"
+          // color="blue.100"
           onClick={() => router.push("/search?tab=projects")}
         />
         <PrimaryFind
           title="クリエイターを探す"
           text="500ユーザー"
           icon={BiUser}
-          color="red.100"
+          // color="red.100"
           onClick={() => router.push("/search?tab=users")}
         />
         <PrimaryFind
           title="作品を見る"
           text="300作品"
           icon={HiBookOpen}
-          color="yellow.100"
+          // color="yellow.100"
           onClick={() => router.push("/search?tab=works")}
         />
       </HStack>

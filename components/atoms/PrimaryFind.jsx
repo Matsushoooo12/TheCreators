@@ -9,7 +9,8 @@ const PrimaryFind = (props) => {
       w="30%"
       h="100%"
       p="16px"
-      bg={color}
+      bg="white"
+      boxShadow="md"
       justifyContent="center"
       alignItems="center"
       borderRadius="lg"

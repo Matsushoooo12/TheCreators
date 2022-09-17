@@ -299,14 +299,6 @@ const LeftSidebar = () => {
             />
             <MenuItem
               isOpen={isOpen}
-              text="Todo"
-              toolTip="Todo"
-              icon={FcTodoList}
-              url={projectGroupDocumentUrl(window.location.href)}
-              onClick={() => router.push(`/projects/${id}/group/todo`)}
-            />
-            <MenuItem
-              isOpen={isOpen}
               text="File"
               toolTip="File"
               icon={MdOutlineAttachFile}

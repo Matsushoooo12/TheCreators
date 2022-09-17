@@ -28,7 +28,7 @@ const TagIcons = () => {
   }));
 
   const userProjects = projects?.filter(
-    (project) => project.user.uid === currentUser?.uid
+    (project) => project.user?.uid === currentUser?.uid
   );
 
   const userWorks = works?.filter((work) => work.user.uid === currentUser?.uid);

@@ -50,6 +50,202 @@
 
 今後の目標としては、ものづくりで生きるをテーマにサービスを作っていきたいと考えています。
 
+## 使用技術
+
+- フロントエンド
+  - React
+  - TypeScript
+  - NextJs
+- バックエンド
+  - Firebase
+    - Cloud Firestore
+    - Authentication
+    - Cloud Storage
+
+## ページフロー
+
+### 新規作成フォーム
+
+新規作成フォームで、名前、メールアドレス、パスワード、パスワード確認を入力してアカウントを作成ボタンをクリックする。
+
+<img width="1274" alt="スクリーンショット 2022-07-29 1 44 29" src="https://user-images.githubusercontent.com/66903388/190948660-704f6348-85d9-4779-88f4-e7912ae0bccd.png">
+
+↓
+
+### Step 1/3
+
+所属組織名と専門役割を入力して次へをクリックすると Step 2/3 に遷移する。
+
+<img width="1274" alt="スクリーンショット 2022-07-29 1 50 21" src="https://user-images.githubusercontent.com/66903388/190948794-4475a577-ec95-405b-851d-5f02e3fc2a54.png">
+
+↓
+
+### Step 2/3
+
+step 1/3 で選んだ専門役割から選ばれたタグ一覧が表示され、それをクリックすることでタグを追加できる。
+
+<img width="1274" alt="スクリーンショット 2022-07-29 1 50 39" src="https://user-images.githubusercontent.com/66903388/190948927-aef0d376-2523-47a7-ba3c-715f02c4c420.png">
+
+↓
+
+### Step 3/3
+
+自己紹介を記入して登録を完了ボタンを押したらアカウントが作成される。
+
+<img width="1274" alt="スクリーンショット 2022-07-29 1 52 51" src="https://user-images.githubusercontent.com/66903388/190949015-43e76d00-9bc5-4a6b-9628-5eb78e5db4b8.png">
+
+↓
+
+### Dashboard
+
+ユーザーが作成されたらダッシュボードページに遷移する。
+
+<img width="1274" alt="スクリーンショット 2022-07-29 1 55 01" src="https://user-images.githubusercontent.com/66903388/190949202-171764b5-1e73-4851-92ae-bdfca1fd8994.png">
+
+↓
+
+### ユーザー一覧
+
+ダッシュボードからクリエイターを探すを押すとユーザー一覧ページに遷移する
+
+<img width="1274" alt="スクリーンショット 2022-07-29 2 18 43" src="https://user-images.githubusercontent.com/66903388/190949336-ef63ae3f-2fb3-40a2-85be-f9aa7e9abc1a.png">
+
+↓
+
+試しに test1 というユーザーにマッチング申請を送ってみる。
+
+↓
+
+<img width="1274" alt="スクリーンショット 2022-07-29 2 19 40" src="https://user-images.githubusercontent.com/66903388/190949436-5f4e8f0f-b1cb-460b-9636-86d37585b0b9.png">
+
+test1 のマッチング申請ボタンがマッチング申請中に表示変更されていて、織田信長のフォロー数が１になっている。test1 のフォロワー数も１つ増えている。
+
+↓
+
+ユーザーのマッチングページを左カラムのユーザーアイコンをクリックして開いてみる。
+
+↓
+
+<img width="1274" alt="スクリーンショット 2022-07-29 2 27 02" src="https://user-images.githubusercontent.com/66903388/190949520-9115f605-9b5c-4998-b073-1f45bd9c47be.png">
+
+フォローにマッチング申請を送ったユーザーが入っている。
+
+↓
+
+この test1 でログインして織田信長のマッチング申請を許可してマッチング状態にしてみる。
+
+↓
+
+<img width="1274" alt="スクリーンショット 2022-07-29 2 29 33" src="https://user-images.githubusercontent.com/66903388/190949665-b5f88f21-a266-4fc0-ab70-d9548505c0b7.png">
+
+test1 でログインしてユーザーのマッチングページに行くとフォロワー一覧に先程 test1 をフォローした織田信長が入っている。
+
+↓
+
+マッチング申請を許可してみる。
+
+↓
+
+<img width="1274" alt="スクリーンショット 2022-07-29 2 34 28" src="https://user-images.githubusercontent.com/66903388/190949748-d8d141f0-23b0-4bcd-843f-73de45309d1e.png">
+
+ボタンの表示がマッチング中に変わり、DM ルームに遷移するボタンが表示された。
+
+DM に進んでみる
+
+↓
+
+<img width="1274" alt="スクリーンショット 2022-07-29 2 36 06" src="https://user-images.githubusercontent.com/66903388/190949813-d055442a-6463-44c9-8877-f8df9caa9811.png">
+
+無事織田信長と test1 の DM ルームが作成された。
+
+作成された日時が新しいのでルームの並び順が一番上で表示されている。
+
+メッセージを送ってみる。
+
+↓
+
+<img width="1274" alt="スクリーンショット 2022-07-29 2 40 32" src="https://user-images.githubusercontent.com/66903388/190949887-974b4ed8-dd59-433d-8f7a-1f2d2bda02ee.png">
+
+自分の送信したメッセージが右側に表示された。
+
+↓
+
+それでは織田信長側で DM を見てみましょう。
+
+↓
+
+<img width="1274" alt="スクリーンショット 2022-07-29 2 44 07" src="https://user-images.githubusercontent.com/66903388/190949954-6b41847f-25b9-402f-94e0-f8d39e4e3df1.png">
+
+ちゃんと test1 のメッセージが左側に表示されています。
+
+相手ユーザーはアイコンも表示されています。
+
+↓
+
+それでは返信してみましょう。
+
+↓
+
+<img width="1274" alt="スクリーンショット 2022-07-29 2 47 08" src="https://user-images.githubusercontent.com/66903388/190950033-195a679c-3937-4f82-b835-91d5e00f81e7.png">
+
+ちゃんと返信できました。
+
+↓
+
+次にプロジェクトの一覧を見てみましょう。
+
+左側の Search アイコンをクリックします。
+
+↓
+
+<img width="1274" alt="スクリーンショット 2022-07-29 2 57 12" src="https://user-images.githubusercontent.com/66903388/190950126-01d62077-d406-4786-86a5-a19b58c18e7e.png">
+
+それではおくすり手帳アプリのプロジェクトに参加申請を送ってみましょう。
+
+↓
+
+<img width="1274" alt="スクリーンショット 2022-07-29 2 59 49" src="https://user-images.githubusercontent.com/66903388/190950187-0dd56f0e-4958-45fa-a039-7c488db40f64.png">
+
+モーダルで出てきたフォームに入力して送信を押す。
+
+↓
+
+<img width="1274" alt="スクリーンショット 2022-07-29 2 59 57" src="https://user-images.githubusercontent.com/66903388/190950290-2e16f0a4-7883-427b-8a82-ed48c5a35ca5.png">
+
+参加申請したら参加申請ボタンがクリックできなくなり、参加申請中という表示に変わる。
+
+↓
+
+ついでに右上のボタンからこのプロジェクトをブックマークに追加してみます。
+
+↓
+
+<img width="1274" alt="スクリーンショット 2022-07-29 3 03 05" src="https://user-images.githubusercontent.com/66903388/190950395-9daeca1b-edbe-4c41-ace0-658fcd9cd378.png">
+
+ブックマーク数の表示が１つ＋されている。
+
+左側のカラムのユーザーのプロジェクトアイコンをクリックしてブックマーク一覧を見てみる。
+
+<img width="1274" alt="スクリーンショット 2022-07-29 3 08 59" src="https://user-images.githubusercontent.com/66903388/190950484-a14b6abe-1a35-47fa-912c-c5b77e6ea129.png">
+
+追加されていたら成功
+
+次に参加申請をしているので、このグループの参加リクエストに入っているのかを確認する。
+
+↓
+
+<img width="1274" alt="スクリーンショット 2022-07-29 3 11 10" src="https://user-images.githubusercontent.com/66903388/190950538-6868cb55-a4cb-4fbd-9c3d-0fd3c1b891fe.png">
+
+ちゃんとグループの中の Request ページに表示されている。
+
+許可するボタンを押してメンバーに追加されるかを見てみる
+
+↓
+
+<img width="1274" alt="スクリーンショット 2022-07-29 3 12 25" src="https://user-images.githubusercontent.com/66903388/190950586-b8121792-f440-4171-b878-05464af37000.png">
+
+ちゃんとメンバーに織田信長が入っていたら成功。
+
 ## 課題点
 
 - UI・UX 面

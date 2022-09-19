@@ -1,34 +1,70 @@
-This is a [Next.js](https://nextjs.org/) project bootstrapped with [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app).
+# The Creators
 
-## Getting Started
+<img width="931" alt="スクリーンショット 2022-07-28 23 40 24" src="https://user-images.githubusercontent.com/66903388/190944045-36448cdc-62d4-48de-aa25-705ce9c7ee01.png">
 
-First, run the development server:
+## 概要
 
-```bash
-npm run dev
-# or
-yarn dev
-```
+- 0 から何かものづくりをしたいクリエイター同士で繋がり、協力して頭の中に描いたものを実現することのできるサービス。
+- 誰かが作ったプロジェクトに人が集まり一緒にものづくりをして完成した作品を投稿することができる。
+- ものづくりを構想段階から作った後までをサポートして、より気軽に個人規模でのものづくりを実現しやすくすることにより、「職業ものづくり」を増やしていきたい。
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## 背景
 
-You can start editing the page by modifying `pages/index.js`. The page auto-updates as you edit the file.
+### 1. デジハリでの環境がもったいない
 
-[API routes](https://nextjs.org/docs/api-routes/introduction) can be accessed on [http://localhost:3000/api/hello](http://localhost:3000/api/hello). This endpoint can be edited in `pages/api/hello.js`.
+<img width="1090" alt="スクリーンショット 2022-07-29 0 18 27" src="https://user-images.githubusercontent.com/66903388/190944292-79c32a16-081e-4a3a-ab1f-99ac780c29af.png">
 
-The `pages/api` directory is mapped to `/api/*`. Files in this directory are treated as [API routes](https://nextjs.org/docs/api-routes/introduction) instead of React pages.
+私はデジタルハリウッドに入ってから、小説執筆、スマホゲーム開発、ボードゲーム開発、アプリ開発など様々なものづくりに挑戦してきました。
 
-## Learn More
+そんな中で、感じてきたのは様々な専門性をもった人たちの集まるデジハリでもっと協力してそれぞれの専門性をかけ合わせたら立派なものが作れるのではないだろうかということです。
 
-To learn more about Next.js, take a look at the following resources:
+しかし、私も含め私の周りも、知り合いは同じ領域の人が多かったり、コロナ渦で知り合いが少なかったりしてプライベートで協力してものづくりをすることは自分から積極的にアクションを起こさない限り難しいことが多いと感じます。
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+実際に私は、デジハリの友達と毎週ミーティングをして企画を立ててものづくりをすることを習慣にしていましたが、その中での実現したいと思った企画に必要な技術を持っている人が周りにいなくて断念したことが多くありました。
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js/) - your feedback and contributions are welcome!
+ものづくりをする上で、小説執筆時には映像作品にしてみたかったり、アプリ開発時には UI デザインの専門性が欲しかったり、個人規模で作る際にも１人ではまかない切れない専門性がでてきます。
 
-## Deploy on Vercel
+どんな企業にも様々な職種があるように、ものづくりをする上でも様々な専門性が必要になると思います。そして、そのようなものづくりをしたいという思考の専門性を持った人が同じスペースに集まることにより、これまで頭で考えていたけど実現が難しかったことを実現しやすくしたいと考えました。
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+### 2. ものづくりの問題点を解決したい
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/deployment) for more details.
+<img width="476" alt="スクリーンショット 2022-07-29 0 16 17" src="https://user-images.githubusercontent.com/66903388/190944540-bde24c06-c910-4383-8bad-81fd8a29f169.png">
+
+私はものづくりで生きていきたいと考えています。
+
+なぜならものづくりが自分にとって一番没頭できることだからです。
+
+ここでいう「ものづくり」とは、「自分で考えながら仕様設計から開発までをする個人規模での開発」のことに当たります。
+
+私と同じように、頭の中に作りたいものがある人が多くいると思います。
+
+でもそのものが実現しないことが多くいると思います。
+
+そして、そのものづくりに関する問題点には以下の３つがあると思いました。
+
+1. 作りたいものはあるけどどうやって実現するのか分からない。自分一人の技術だと難しい。
+2. 近くに一緒に物を作ってくれるクリエイターがいない。クリエイターがいたとしても、ビジョンが一致していてちゃんとコミットしてくれる人がいない。
+3. 作った後のアクションがわからず、モチベーションが最後まで続かない。
+
+このようなものづくりにおける課題を解決できるサービスを作り、ものづくりを「構想から作った先まで」をサポートできるサービスを実現することで、没頭できるものづくりで生きる、「職業ものづくり」を実現できると考えました。
+
+今後の目標としては、ものづくりで生きるをテーマにサービスを作っていきたいと考えています。
+
+## 課題点
+
+- UI・UX 面
+  - まだデザイン面が拙くちゃんと世にでているサービスにはほど遠いと感じているので、これから機能をもとにデザイン面を修正していきユーザーが使いやすいものにしていきたいです。
+
+## 今後の展望
+
+- UI/UX を整えながら必要な機能を整備して、不備がない状態で初期リリースをしてデジハリ生を対象に使ってもらいながら改善していく。
+  - デジハリ生同士のものづくりを活性化させる。
+  - デジハリ生のクリエイターデータベースとしてデジハリ生のものづくりの好循環を生み出す。
+
+## 最終的な目標
+
+私が最終的に実現したいと思っているのは、上記で記した通り「1. 実現の仕方が分からない」、「2. 一緒に協力するクリエイターがいない」、「3. 作った後の行動が分からない」という問題点を解決して、ものづくりを一気貫通しやすくするサービスです。
+
+このアプリではクリエイターがプロジェクトに集まって協力するまでの「2. 一緒に協力するクリエイターがいない」の問題点を解決するための基本的な機能の実装までを作成しました。
+
+そして、その中でも根幹には「職業ものづくり」をめざしているため、ゼロイチのものづくりをしながら生活ができるようなサービスを生み出し、新たな働き方を実現したいと考えています。
